@@ -33,7 +33,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	err := ProcessMetric(r.URL.Path)
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
