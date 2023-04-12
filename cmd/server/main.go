@@ -30,7 +30,7 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	err, status := ProcessMetric(r.URL.Path)
+	status, err := ProcessMetric(r.URL.Path)
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(status)
@@ -39,13 +39,13 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(status)
 }
 
-func ProcessMetric(data string) (error, int) {
+func ProcessMetric(data string) (int, error) {
 	if len(data) == 0 {
-		return errors.New("empty metrica data"), http.StatusNotFound
+		return http.StatusNotFound, errors.New("empty metrica data")
 	}
 	parts := strings.Split(data, "/")
 	if len(parts) != 3 {
-		return errors.New("invalid metric data format"), http.StatusNotFound
+		return http.StatusNotFound, errors.New("invalid metric data format")
 	}
 	var name string
 	switch parts[0] {
@@ -54,7 +54,7 @@ func ProcessMetric(data string) (error, int) {
 		value, err := strconv.ParseFloat(parts[2], 64)
 		if err != nil {
 			fmt.Println(err)
-			return errors.New("wrong gauge metric value format"), http.StatusBadRequest
+			return http.StatusBadRequest, errors.New("wrong gauge metric value format")
 		}
 		fmt.Printf("Gauge metric: %s = %f\n", name, value)
 		storage.SetGauge(name, value)
@@ -64,13 +64,13 @@ func ProcessMetric(data string) (error, int) {
 		value, err := strconv.ParseInt(parts[2], 10, 64)
 		if err != nil {
 			fmt.Println(err)
-			return errors.New("wrong counter metric value format"), http.StatusBadRequest
+			return http.StatusBadRequest, errors.New("wrong counter metric value format")
 		}
 		fmt.Printf("Counter metric: %s = %d\n", name, value)
 		storage.SetCounter(name, value)
 		fmt.Println(storage)
 	default:
-		return fmt.Errorf("unknown metric type [%s]", parts[0]), http.StatusBadRequest
+		return http.StatusBadRequest, fmt.Errorf("unknown metric type [%s]", parts[0])
 	}
-	return nil, http.StatusOK
+	return http.StatusOK, nil
 }
