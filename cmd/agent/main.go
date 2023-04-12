@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -31,9 +29,11 @@ func run() error {
 			fmt.Println("Metrics are reported")
 		}
 	}()
-	r := bufio.NewReader(os.Stdin)
-	fmt.Println("Press Enter to exit")
-	r.ReadLine()
+	//r := bufio.NewReader(os.Stdin)
+	//fmt.Println("Press Enter to exit")
+	//r.ReadLine()
+	for {
+	}
 	pollTicker.Stop()
 	reportTicker.Stop()
 	return nil

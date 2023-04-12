@@ -7,12 +7,14 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime"
+	"sync"
 )
 
 type Metrics struct {
 	server   string
 	gauges   map[string]float64
 	counters map[string]int64
+	lock     sync.Mutex
 }
 
 func NewMetrics(server string) Metrics {
@@ -25,6 +27,8 @@ func NewMetrics(server string) Metrics {
 }
 
 func (m Metrics) Poll() error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	data := runtime.MemStats{}
 	runtime.ReadMemStats(&data)
 	m.gauges["Alloc"] = float64(data.Alloc)
@@ -60,6 +64,8 @@ func (m Metrics) Poll() error {
 }
 
 func (m Metrics) Report() error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	client := &http.Client{}
 	for name, value := range m.gauges {
 		request, err := http.NewRequest(http.MethodPost,
