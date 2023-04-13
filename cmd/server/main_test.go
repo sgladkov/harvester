@@ -140,3 +140,67 @@ func TestCounter(t *testing.T) {
 		})
 	}
 }
+
+func TestGauge(t *testing.T) {
+	type want struct {
+		method  string
+		request string
+		code    int
+		body    string
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "update gauge",
+			want: want{
+				method:  http.MethodPost,
+				request: `/update/gauge/test/123.65`,
+				code:    http.StatusOK,
+				body:    "",
+			},
+		},
+		{
+			name: "get gauge",
+			want: want{
+				method:  http.MethodGet,
+				request: `/value/gauge/test`,
+				code:    http.StatusOK,
+				body:    "123.65",
+			},
+		},
+		{
+			name: "get unknown gauge",
+			want: want{
+				method:  http.MethodGet,
+				request: `/value/gauge/unknown`,
+				code:    http.StatusNotFound,
+				body:    "",
+			},
+		},
+	}
+	storage = internal.NewMemStorage()
+	ts := httptest.NewServer(MetricsRouter())
+	defer ts.Close()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req, err := http.NewRequest(test.want.method, ts.URL+test.want.request, nil)
+			require.NoError(t, err)
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(res.Body)
+			assert.Equal(t, test.want.code, res.StatusCode)
+			body, err := io.ReadAll(res.Body)
+			if len(test.want.body) > 0 {
+				assert.Equal(t, test.want.body, string(body))
+			}
+			require.NoError(t, err)
+		})
+	}
+}
