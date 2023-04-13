@@ -17,7 +17,7 @@ func NewMemStorage() MemStorage {
 }
 
 func (m MemStorage) GetGauge(name string) (float64, error) {
-	value, exists := m.gauges["name"]
+	value, exists := m.gauges[name]
 	if !exists {
 		return 0.0, fmt.Errorf("no gauge [%s]", name)
 	}
@@ -30,9 +30,9 @@ func (m MemStorage) SetGauge(name string, value float64) error {
 }
 
 func (m MemStorage) GetCounter(name string) (int64, error) {
-	value, exists := m.counters["name"]
+	value, exists := m.counters[name]
 	if !exists {
-		return 0, fmt.Errorf("no gauge [%s]", name)
+		return 0, fmt.Errorf("no counter [%s]", name)
 	}
 	return value, nil
 }

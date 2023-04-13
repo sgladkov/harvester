@@ -25,6 +25,9 @@ func MetricsRouter() chi.Router {
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/{type}/{name}/{value}", updateMetric)
 	})
+	r.Route("/value/", func(r chi.Router) {
+		r.Get("/{type}/{name}", getMetric)
+	})
 	return r
 }
 
@@ -77,4 +80,43 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(storage)
 	w.WriteHeader(http.StatusOK)
+}
+
+func getMetric(w http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "type")
+	switch metricType {
+	case "gauge":
+		getGauge(w, r)
+	case "counter":
+		getCounter(w, r)
+	default:
+		fmt.Printf("Unkvown metric type [%s]\n", metricType)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func getGauge(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value, err := storage.GetGauge(name)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Gauge metric: %s = %f\n", name, value)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%f", value)))
+}
+
+func getCounter(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value, err := storage.GetCounter(name)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Counter metric: %s = %d\n", name, value)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%d", value)))
 }
