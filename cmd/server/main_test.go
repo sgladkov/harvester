@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/sgladkov/harvester/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,16 +55,22 @@ func TestWebhook(t *testing.T) {
 		},
 	}
 	storage = internal.NewMemStorage()
-	handler := http.StripPrefix("/update/", http.HandlerFunc(webhook))
+	ts := httptest.NewServer(MetricsRouter())
+	defer ts.Close()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.want.method, test.want.request, nil)
-			w := httptest.NewRecorder()
-			handler.ServeHTTP(w, request)
-			res := w.Result()
+			req, err := http.NewRequest(test.want.method, ts.URL+test.want.request, nil)
+			require.NoError(t, err)
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}(res.Body)
 			assert.Equal(t, test.want.code, res.StatusCode)
-			defer res.Body.Close()
-			_, err := io.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
 		})
 	}

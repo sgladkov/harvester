@@ -17,7 +17,10 @@ func run() error {
 	pollTicker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	go func() {
 		for range pollTicker.C {
-			m.Poll()
+			err := m.Poll()
+			if err != nil {
+				fmt.Println(err)
+			}
 			fmt.Println("Metrics are read")
 		}
 	}()
@@ -25,7 +28,10 @@ func run() error {
 	reportTicker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	go func() {
 		for range reportTicker.C {
-			m.Report()
+			err := m.Report()
+			if err != nil {
+				fmt.Println(err)
+			}
 			fmt.Println("Metrics are reported")
 		}
 	}()

@@ -1,84 +1,68 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/sgladkov/harvester/internal"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 var storage internal.Storage
 
 func main() {
-	if err := run(); err != nil {
+	storage = internal.NewMemStorage()
+	err := http.ListenAndServe(`:8080`, MetricsRouter())
+	if err != nil {
 		panic(err)
 	}
 }
 
-func run() error {
-	storage = internal.NewMemStorage()
-	http.Handle("/update/", http.StripPrefix("/update/", http.HandlerFunc(webhook)))
-	return http.ListenAndServe(`:8080`, nil)
+func MetricsRouter() chi.Router {
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Route("/update/", func(r chi.Router) {
+		r.Post("/gauge/{name}/{value}", updateGauge)
+		r.Post("/counter/{name}/{value}", updateCounter)
+	})
+	return r
 }
 
-func webhook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Url:", r.URL)
-	if r.Method != http.MethodPost {
-		// разрешаем только POST-запросы
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	status, err := ProcessMetric(r.URL.Path)
+func updateGauge(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value, err := strconv.ParseFloat(chi.URLParam(r, "value"), 64)
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(status)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	w.WriteHeader(status)
+	fmt.Printf("Gauge metric: %s = %f\n", name, value)
+	err = storage.SetGauge(name, value)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println(storage)
+	w.WriteHeader(http.StatusOK)
 }
 
-func ProcessMetric(data string) (int, error) {
-	if len(data) == 0 {
-		return http.StatusNotFound, errors.New("empty metric data")
+func updateCounter(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	value, err := strconv.ParseInt(chi.URLParam(r, "value"), 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
-	parts := strings.Split(data, "/")
-	if len(parts) != 3 {
-		return http.StatusNotFound, errors.New("invalid metric data format")
+	fmt.Printf("Counter metric: %s = %d\n", name, value)
+	err = storage.SetCounter(name, value)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
-	var name string
-	switch parts[0] {
-	case "gauge":
-		name = parts[1]
-		value, err := strconv.ParseFloat(parts[2], 64)
-		if err != nil {
-			fmt.Println(err)
-			return http.StatusBadRequest, errors.New("wrong gauge metric value format")
-		}
-		fmt.Printf("Gauge metric: %s = %f\n", name, value)
-		err = storage.SetGauge(name, value)
-		if err != nil {
-			fmt.Println(err)
-			return http.StatusBadRequest, errors.New("failed to set gauge metric")
-		}
-		fmt.Println(storage)
-	case "counter":
-		name = parts[1]
-		value, err := strconv.ParseInt(parts[2], 10, 64)
-		if err != nil {
-			fmt.Println(err)
-			return http.StatusBadRequest, errors.New("wrong counter metric value format")
-		}
-		fmt.Printf("Counter metric: %s = %d\n", name, value)
-		err = storage.SetCounter(name, value)
-		if err != nil {
-			fmt.Println(err)
-			return http.StatusBadRequest, errors.New("failed to set counter metric")
-		}
-		fmt.Println(storage)
-	default:
-		return http.StatusBadRequest, fmt.Errorf("unknown metric type [%s]", parts[0])
-	}
-	return http.StatusOK, nil
+	fmt.Println(storage)
+	w.WriteHeader(http.StatusOK)
 }
