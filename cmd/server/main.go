@@ -15,6 +15,9 @@ var storage internal.Storage
 func main() {
 	storage = internal.NewMemStorage()
 	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
+	flag.Parse()
+
+	fmt.Println(*endpoint)
 	err := http.ListenAndServe(*endpoint, MetricsRouter())
 	if err != nil {
 		panic(err)

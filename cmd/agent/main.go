@@ -1,20 +1,23 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"strings"
 	"time"
 )
 
 func main() {
-	if err := run(); err != nil {
-		panic(err)
+	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
+	pollInterval := flag.Int("p", 2, "poll interval")
+	reportInterval := flag.Int("r", 10, "report interval")
+	flag.Parse()
+	if !strings.HasPrefix(*endpoint, "http://") && !strings.HasPrefix(*endpoint, "https://") {
+		*endpoint = "http://" + *endpoint
 	}
-}
 
-func run() error {
-	m := NewMetrics("http://localhost:8080")
-	pollInterval := 2
-	pollTicker := time.NewTicker(time.Duration(pollInterval) * time.Second)
+	m := NewMetrics(*endpoint)
+	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
 	go func() {
 		for range pollTicker.C {
 			err := m.Poll()
@@ -24,8 +27,7 @@ func run() error {
 			fmt.Println("Metrics are read")
 		}
 	}()
-	reportInterval := 10
-	reportTicker := time.NewTicker(time.Duration(reportInterval) * time.Second)
+	reportTicker := time.NewTicker(time.Duration(*reportInterval) * time.Second)
 	go func() {
 		for range reportTicker.C {
 			err := m.Report()
@@ -42,5 +44,4 @@ func run() error {
 	}
 	pollTicker.Stop()
 	reportTicker.Stop()
-	return nil
 }
