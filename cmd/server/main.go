@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sgladkov/harvester/internal"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -14,8 +15,14 @@ var storage internal.Storage
 
 func main() {
 	storage = internal.NewMemStorage()
+	// check arguments
 	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	flag.Parse()
+	// check environment
+	address := os.Getenv("ADDRESS")
+	if len(address) > 0 {
+		*endpoint = address
+	}
 
 	fmt.Println(*endpoint)
 	err := http.ListenAndServe(*endpoint, MetricsRouter())

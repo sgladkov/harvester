@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -12,6 +14,29 @@ func main() {
 	pollInterval := flag.Int("p", 2, "poll interval")
 	reportInterval := flag.Int("r", 10, "report interval")
 	flag.Parse()
+	// check environment
+	address := os.Getenv("ADDRESS")
+	if len(address) > 0 {
+		*endpoint = address
+	}
+	reportStr := os.Getenv("REPORT_INTERVAL")
+	if len(reportStr) > 0 {
+		val, err := strconv.ParseInt(reportStr, 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		*reportInterval = int(val)
+	}
+	pollStr := os.Getenv("POLL_INTERVAL")
+	if len(pollStr) > 0 {
+		val, err := strconv.ParseInt(pollStr, 10, 32)
+		if err != nil {
+			panic(err)
+		}
+		*pollInterval = int(val)
+	}
+
+	// add default url scheme if required
 	if !strings.HasPrefix(*endpoint, "http://") && !strings.HasPrefix(*endpoint, "https://") {
 		*endpoint = "http://" + *endpoint
 	}
