@@ -23,10 +23,22 @@ func MetricsRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Route("/update/", func(r chi.Router) {
-		r.Post("/gauge/{name}/{value}", updateGauge)
-		r.Post("/counter/{name}/{value}", updateCounter)
+		r.Post("/{type}/{name}/{value}", updateMetric)
 	})
 	return r
+}
+
+func updateMetric(w http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "type")
+	switch metricType {
+	case "gauge":
+		updateGauge(w, r)
+	case "counter":
+		updateCounter(w, r)
+	default:
+		fmt.Printf("Unkvown metric type [%s]\n", metricType)
+		w.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 func updateGauge(w http.ResponseWriter, r *http.Request) {

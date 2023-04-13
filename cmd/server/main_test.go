@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestWebhook(t *testing.T) {
+func TestMetricsRouter(t *testing.T) {
 	type want struct {
 		method  string
 		request string
@@ -51,6 +51,14 @@ func TestWebhook(t *testing.T) {
 				method:  http.MethodGet,
 				request: `/update/counter/test/1`,
 				code:    http.StatusMethodNotAllowed,
+			},
+		},
+		{
+			name: "wrong metric",
+			want: want{
+				method:  http.MethodPost,
+				request: `/update/unknown/test/1`,
+				code:    http.StatusBadRequest,
 			},
 		},
 	}
