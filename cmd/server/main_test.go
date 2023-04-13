@@ -110,6 +110,14 @@ func TestCounter(t *testing.T) {
 				code:    http.StatusOK,
 			},
 		},
+		{
+			name: "get unknown counter",
+			want: want{
+				method:  http.MethodGet,
+				request: `/value/counter/unknown`,
+				code:    http.StatusNotFound,
+			},
+		},
 	}
 	storage = internal.NewMemStorage()
 	ts := httptest.NewServer(MetricsRouter())

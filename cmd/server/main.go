@@ -100,7 +100,7 @@ func getGauge(w http.ResponseWriter, r *http.Request) {
 	value, err := storage.GetGauge(name)
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	fmt.Printf("Gauge metric: %s = %f\n", name, value)
@@ -113,7 +113,7 @@ func getCounter(w http.ResponseWriter, r *http.Request) {
 	value, err := storage.GetCounter(name)
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	fmt.Printf("Counter metric: %s = %d\n", name, value)
