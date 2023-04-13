@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -13,7 +14,8 @@ var storage internal.Storage
 
 func main() {
 	storage = internal.NewMemStorage()
-	err := http.ListenAndServe(`:8080`, MetricsRouter())
+	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
+	err := http.ListenAndServe(*endpoint, MetricsRouter())
 	if err != nil {
 		panic(err)
 	}
