@@ -11,14 +11,14 @@ type MemStorage struct {
 	lock     sync.Mutex
 }
 
-func NewMemStorage() MemStorage {
+func NewMemStorage() *MemStorage {
 	result := MemStorage{}
 	result.gauges = make(map[string]float64)
 	result.counters = make(map[string]int64)
-	return result
+	return &result
 }
 
-func (m MemStorage) GetGauge(name string) (float64, error) {
+func (m *MemStorage) GetGauge(name string) (float64, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	value, exists := m.gauges[name]
@@ -28,14 +28,14 @@ func (m MemStorage) GetGauge(name string) (float64, error) {
 	return value, nil
 }
 
-func (m MemStorage) SetGauge(name string, value float64) error {
+func (m *MemStorage) SetGauge(name string, value float64) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.gauges[name] = value
 	return nil
 }
 
-func (m MemStorage) GetCounter(name string) (int64, error) {
+func (m *MemStorage) GetCounter(name string) (int64, error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	value, exists := m.counters[name]
@@ -45,14 +45,14 @@ func (m MemStorage) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-func (m MemStorage) SetCounter(name string, value int64) error {
+func (m *MemStorage) SetCounter(name string, value int64) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.counters[name] += value
 	return nil
 }
 
-func (m MemStorage) GetAll() string {
+func (m *MemStorage) GetAll() string {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	var res string
