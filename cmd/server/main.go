@@ -22,6 +22,7 @@ func main() {
 func MetricsRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Get("/", getAllMetrics)
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/{type}/{name}/{value}", updateMetric)
 	})
@@ -80,6 +81,11 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(storage)
 	w.WriteHeader(http.StatusOK)
+}
+
+func getAllMetrics(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(storage.GetAll()))
 }
 
 func getMetric(w http.ResponseWriter, r *http.Request) {
