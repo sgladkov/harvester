@@ -23,7 +23,8 @@ func main() {
 	if len(reportStr) > 0 {
 		val, err := strconv.ParseInt(reportStr, 10, 32)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Failed to interpret REPORT_INTERVAL[%s] environment variable: %s\n", reportStr, err)
+			return
 		}
 		*reportInterval = int(val)
 	}
@@ -31,7 +32,8 @@ func main() {
 	if len(pollStr) > 0 {
 		val, err := strconv.ParseInt(pollStr, 10, 32)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Failed to interpret POLL_INTERVAL[%s] environment variable: %s\n", pollStr, err)
+			return
 		}
 		*pollInterval = int(val)
 	}
