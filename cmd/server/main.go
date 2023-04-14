@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/sgladkov/harvester/internal"
+	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"net/http"
 	"os"
 	"strconv"
 )
 
-var storage internal.Storage
+var storage storage2.Storage
 
 func main() {
-	storage = internal.NewMemStorage()
+	storage = storage2.NewMemStorage()
 	// check arguments
 	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	flag.Parse()

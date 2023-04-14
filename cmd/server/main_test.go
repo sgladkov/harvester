@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/sgladkov/harvester/internal"
+	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -62,7 +62,7 @@ func TestMetricsRouter(t *testing.T) {
 			},
 		},
 	}
-	storage = internal.NewMemStorage()
+	storage = storage2.NewMemStorage()
 	ts := httptest.NewServer(MetricsRouter())
 	defer ts.Close()
 	for _, test := range tests {
@@ -119,7 +119,7 @@ func TestCounter(t *testing.T) {
 			},
 		},
 	}
-	storage = internal.NewMemStorage()
+	storage = storage2.NewMemStorage()
 	ts := httptest.NewServer(MetricsRouter())
 	defer ts.Close()
 	for _, test := range tests {
@@ -180,7 +180,7 @@ func TestGauge(t *testing.T) {
 			},
 		},
 	}
-	storage = internal.NewMemStorage()
+	storage = storage2.NewMemStorage()
 	ts := httptest.NewServer(MetricsRouter())
 	defer ts.Close()
 	for _, test := range tests {
