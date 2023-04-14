@@ -17,16 +17,16 @@ type Metrics struct {
 	lock     sync.Mutex
 }
 
-func NewMetrics(server string) Metrics {
+func NewMetrics(server string) *Metrics {
 	result := Metrics{}
 	result.server = server
 	result.gauges = make(map[string]float64)
 	result.counters = make(map[string]int64)
 	result.counters["PollCount"] = 0
-	return result
+	return &result
 }
 
-func (m Metrics) Poll() error {
+func (m *Metrics) Poll() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	data := runtime.MemStats{}
@@ -63,7 +63,7 @@ func (m Metrics) Poll() error {
 	return nil
 }
 
-func (m Metrics) Report() error {
+func (m *Metrics) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	client := &http.Client{}
