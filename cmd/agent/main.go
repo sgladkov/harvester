@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/sgladkov/harvester/internal"
 	"os"
 	"strconv"
 	"strings"
@@ -43,7 +44,7 @@ func main() {
 		*endpoint = "http://" + *endpoint
 	}
 
-	m := NewMetrics(*endpoint)
+	m := internal.NewMetrics(*endpoint)
 	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
 	defer pollTicker.Stop()
 	go func() {
