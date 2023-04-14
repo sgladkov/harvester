@@ -95,9 +95,12 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func getAllMetrics(w http.ResponseWriter, r *http.Request) {
+func getAllMetrics(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(storage.GetAll()))
+	_, err := w.Write([]byte(storage.GetAll()))
+	if err != nil {
+		fmt.Printf("Failed to write responce body: %s\n", err)
+	}
 }
 
 func getMetric(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +126,10 @@ func getGauge(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("Gauge metric: %s = %g\n", name, value)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%g", value)))
+	_, err = w.Write([]byte(fmt.Sprintf("%g", value)))
+	if err != nil {
+		fmt.Printf("Failed to write responce body: %s\n", err)
+	}
 }
 
 func getCounter(w http.ResponseWriter, r *http.Request) {
@@ -136,5 +142,8 @@ func getCounter(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("Counter metric: %s = %d\n", name, value)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%d", value)))
+	_, err = w.Write([]byte(fmt.Sprintf("%d", value)))
+	if err != nil {
+		fmt.Printf("Failed to write responce body: %s\n", err)
+	}
 }
