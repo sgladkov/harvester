@@ -45,6 +45,7 @@ func main() {
 
 	m := NewMetrics(*endpoint)
 	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
+	defer pollTicker.Stop()
 	go func() {
 		for range pollTicker.C {
 			err := m.Poll()
@@ -55,6 +56,7 @@ func main() {
 		}
 	}()
 	reportTicker := time.NewTicker(time.Duration(*reportInterval) * time.Second)
+	defer reportTicker.Stop()
 	go func() {
 		for range reportTicker.C {
 			err := m.Report()
@@ -69,6 +71,5 @@ func main() {
 	//r.ReadLine()
 	for {
 	}
-	pollTicker.Stop()
-	reportTicker.Stop()
+
 }
