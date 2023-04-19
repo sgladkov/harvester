@@ -71,6 +71,7 @@ func main() {
 	//fmt.Println("Press Enter to exit")
 	//r.ReadLine()
 	for {
+		time.Sleep(time.Second)
 	}
 
 }
