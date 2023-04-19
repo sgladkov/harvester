@@ -71,12 +71,12 @@ func TestMetricsRouter(t *testing.T) {
 			require.NoError(t, err)
 			res, err := ts.Client().Do(req)
 			require.NoError(t, err)
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
+			defer func() {
+				err := res.Body.Close()
 				if err != nil {
 					fmt.Println(err)
 				}
-			}(res.Body)
+			}()
 			assert.Equal(t, test.want.code, res.StatusCode)
 			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
@@ -128,12 +128,12 @@ func TestCounter(t *testing.T) {
 			require.NoError(t, err)
 			res, err := ts.Client().Do(req)
 			require.NoError(t, err)
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
+			defer func() {
+				err := res.Body.Close()
 				if err != nil {
 					fmt.Println(err)
 				}
-			}(res.Body)
+			}()
 			assert.Equal(t, test.want.code, res.StatusCode)
 			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
@@ -189,12 +189,12 @@ func TestGauge(t *testing.T) {
 			require.NoError(t, err)
 			res, err := ts.Client().Do(req)
 			require.NoError(t, err)
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
+			defer func() {
+				err := res.Body.Close()
 				if err != nil {
 					fmt.Println(err)
 				}
-			}(res.Body)
+			}()
 			assert.Equal(t, test.want.code, res.StatusCode)
 			body, err := io.ReadAll(res.Body)
 			if len(test.want.body) > 0 {
