@@ -63,6 +63,24 @@ func (m *Metrics) Poll() error {
 	return nil
 }
 
+func processRequest(client *http.Client, request *http.Request) error {
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+	_, err = io.ReadAll(resp.Body)
+	return err
+}
+
 func (m *Metrics) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -75,14 +93,7 @@ func (m *Metrics) Report() error {
 			return err
 		}
 		request.Header.Add("Content-Type", "text/plain")
-		resp, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(resp.Status)
-		}
-		_, err = io.ReadAll(resp.Body)
+		err = processRequest(client, request)
 		if err != nil {
 			return err
 		}
@@ -95,14 +106,7 @@ func (m *Metrics) Report() error {
 			return err
 		}
 		request.Header.Add("Content-Type", "text/plain")
-		resp, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(resp.Status)
-		}
-		_, err = io.ReadAll(resp.Body)
+		err = processRequest(client, request)
 		if err != nil {
 			return err
 		}
