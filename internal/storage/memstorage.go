@@ -32,48 +32,48 @@ func NewMemStorage() *MemStorage {
 	return &result
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	value, exists := m.gauges[name]
+func (s *MemStorage) GetGauge(name string) (float64, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	value, exists := s.gauges[name]
 	if !exists {
 		return 0.0, fmt.Errorf("no gauge [%s]", name)
 	}
 	return value, nil
 }
 
-func (m *MemStorage) SetGauge(name string, value float64) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.gauges[name] = value
+func (s *MemStorage) SetGauge(name string, value float64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.gauges[name] = value
 	return nil
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, error) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	value, exists := m.counters[name]
+func (s *MemStorage) GetCounter(name string) (int64, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	value, exists := s.counters[name]
 	if !exists {
 		return 0, fmt.Errorf("no counter [%s]", name)
 	}
 	return value, nil
 }
 
-func (m *MemStorage) SetCounter(name string, value int64) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.counters[name] += value
+func (s *MemStorage) SetCounter(name string, value int64) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.counters[name] += value
 	return nil
 }
 
-func (m *MemStorage) GetAll() string {
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (s *MemStorage) GetAll() string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	var res string
-	for n, v := range m.gauges {
+	for n, v := range s.gauges {
 		res += fmt.Sprintf("%s=%g\n", n, v)
 	}
-	for n, v := range m.counters {
+	for n, v := range s.counters {
 		res += fmt.Sprintf("%s=%d\n", n, v)
 	}
 	return res
@@ -82,21 +82,37 @@ func (m *MemStorage) GetAll() string {
 func (s *MemStorage) SetMetrics(m metrics.Metrics) (metrics.Metrics, error) {
 	switch m.MType {
 	case "gauge":
-		s.SetGauge(m.ID, *m.Value)
+		if m.Value == nil {
+			logger.Log.Warn("invalid gauge value")
+			return m, errors.New("invalid gauge value")
+		}
+		err := s.SetGauge(m.ID, *m.Value)
+		if err != nil {
+			logger.Log.Warn("error while setting gauge", zap.Error(err))
+			return m, err
+		}
 		val, err := s.GetGauge(m.ID)
 		if err != nil {
 			logger.Log.Warn("error while setting gauge", zap.Error(err))
 			return m, err
 		}
-		*m.Value = val
+		m.Value = &val
 	case "counter":
-		s.SetCounter(m.ID, *m.Delta)
+		if m.Delta == nil {
+			logger.Log.Warn("invalid counter value")
+			return m, errors.New("invalid counter value")
+		}
+		err := s.SetCounter(m.ID, *m.Delta)
+		if err != nil {
+			logger.Log.Warn("error while setting counter", zap.Error(err))
+			return m, err
+		}
 		val, err := s.GetCounter(m.ID)
 		if err != nil {
 			logger.Log.Warn("error while setting counter", zap.Error(err))
 			return m, err
 		}
-		*m.Delta = val
+		m.Delta = &val
 	default:
 		logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
 		return m, errors.New("unknown metrics type")
@@ -112,14 +128,14 @@ func (s *MemStorage) GetMetrics(m metrics.Metrics) (metrics.Metrics, error) {
 			logger.Log.Warn("error while getting gauge", zap.Error(err))
 			return m, err
 		}
-		*m.Value = val
+		m.Value = &val
 	case "counter":
 		val, err := s.GetCounter(m.ID)
 		if err != nil {
 			logger.Log.Warn("error while setting counter", zap.Error(err))
 			return m, err
 		}
-		*m.Delta = val
+		m.Delta = &val
 	default:
 		logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
 		return m, errors.New("unknown metrics type")

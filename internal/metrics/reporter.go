@@ -1,24 +1,22 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
-	"io"
+	"github.com/go-resty/resty/v2"
 	"math/rand"
-	"net/http"
 	"runtime"
 	"sync"
 )
 
-type MetricsReporter struct {
+type Reporter struct {
 	server   string
 	gauges   map[string]float64
 	counters map[string]int64
 	lock     sync.Mutex
 }
 
-func NewMetricsReporter(server string) *MetricsReporter {
-	result := MetricsReporter{}
+func NewReporter(server string) *Reporter {
+	result := Reporter{}
 	result.server = server
 	result.gauges = make(map[string]float64)
 	result.counters = make(map[string]int64)
@@ -26,7 +24,7 @@ func NewMetricsReporter(server string) *MetricsReporter {
 	return &result
 }
 
-func (m *MetricsReporter) Poll() error {
+func (m *Reporter) Poll() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	data := runtime.MemStats{}
@@ -63,50 +61,31 @@ func (m *MetricsReporter) Poll() error {
 	return nil
 }
 
-func processRequest(client *http.Client, request *http.Request) error {
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.New(resp.Status)
-	}
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
-	_, err = io.ReadAll(resp.Body)
-	return err
-}
-
-func (m *MetricsReporter) Report() error {
+func (m *Reporter) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	client := &http.Client{}
+	client := resty.New()
+	metrics := Metrics{}
 	for name, value := range m.gauges {
-		request, err := http.NewRequest(http.MethodPost,
-			fmt.Sprintf("%s/update/gauge/%s/%f", m.server, name, value),
-			nil)
-		if err != nil {
-			return err
-		}
-		request.Header.Add("Content-Type", "text/plain")
-		err = processRequest(client, request)
+		metrics.MType = "gauge"
+		metrics.ID = name
+		metrics.Value = &value
+		_, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(&metrics).
+			Post(fmt.Sprintf("%s/update/", m.server))
 		if err != nil {
 			return err
 		}
 	}
 	for name, value := range m.counters {
-		request, err := http.NewRequest(http.MethodPost,
-			fmt.Sprintf("%s/update/counter/%s/%d", m.server, name, value),
-			nil)
-		if err != nil {
-			return err
-		}
-		request.Header.Add("Content-Type", "text/plain")
-		err = processRequest(client, request)
+		metrics.MType = "counter"
+		metrics.ID = name
+		metrics.Delta = &value
+		_, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetBody(&metrics).
+			Post(fmt.Sprintf("%s/update/", m.server))
 		if err != nil {
 			return err
 		}

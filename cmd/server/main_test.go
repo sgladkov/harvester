@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/sgladkov/harvester/internal/metrics"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -200,6 +203,185 @@ func TestGauge(t *testing.T) {
 			if len(test.want.body) > 0 {
 				assert.Equal(t, test.want.body, string(body))
 			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestCounterJSON(t *testing.T) {
+	type want struct {
+		method      string
+		name        string
+		status      int
+		json        bool
+		value       int64
+		returnValue int64
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "update counter",
+			want: want{
+				method:      "/update/",
+				name:        `test`,
+				status:      http.StatusOK,
+				json:        true,
+				value:       1,
+				returnValue: 1,
+			},
+		},
+		{
+			name: "second update counter",
+			want: want{
+				method:      "/update/",
+				name:        `test`,
+				status:      http.StatusOK,
+				json:        true,
+				value:       1,
+				returnValue: 2,
+			},
+		},
+		{
+			name: "get counter",
+			want: want{
+				method:      "/value/",
+				name:        "test",
+				status:      http.StatusOK,
+				json:        true,
+				returnValue: 2,
+			},
+		},
+		{
+			name: "get unknown counter",
+			want: want{
+				method: "/value/",
+				name:   "unknown",
+				status: http.StatusNotFound,
+				json:   false,
+			},
+		},
+	}
+	storage = storage2.NewMemStorage()
+	ts := httptest.NewServer(MetricsRouter())
+	defer ts.Close()
+	m := metrics.Metrics{}
+	m.MType = "counter"
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			m.ID = test.want.name
+			m.Delta = &test.want.value
+			body, _ := json.Marshal(m)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+test.want.method, bytes.NewReader(body))
+			req.Header["Content-Type"] = []string{"application/json"}
+			require.NoError(t, err)
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			reply, _ := io.ReadAll(res.Body)
+			err = json.Unmarshal(reply, &m)
+			if test.want.json {
+				require.NoError(t, err)
+				require.Equal(t, test.want.value, *m.Delta)
+			}
+			defer func() {
+				err := res.Body.Close()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
+			assert.Equal(t, test.want.status, res.StatusCode)
+			_, err = io.ReadAll(res.Body)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestGougeJSON(t *testing.T) {
+	type want struct {
+		method      string
+		name        string
+		status      int
+		json        bool
+		value       float64
+		returnValue float64
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "update gauge",
+			want: want{
+				method:      "/update/",
+				name:        `test`,
+				status:      http.StatusOK,
+				json:        true,
+				value:       1,
+				returnValue: 1,
+			},
+		},
+		{
+			name: "second update gauge",
+			want: want{
+				method:      "/update/",
+				name:        `test`,
+				status:      http.StatusOK,
+				json:        true,
+				value:       1,
+				returnValue: 1,
+			},
+		},
+		{
+			name: "get counter",
+			want: want{
+				method:      "/value/",
+				name:        "test",
+				status:      http.StatusOK,
+				json:        true,
+				returnValue: 1,
+			},
+		},
+		{
+			name: "get unknown gauge",
+			want: want{
+				method: "/value/",
+				name:   "unknown",
+				status: http.StatusNotFound,
+				json:   false,
+			},
+		},
+	}
+	storage = storage2.NewMemStorage()
+	ts := httptest.NewServer(MetricsRouter())
+	defer ts.Close()
+	m := metrics.Metrics{}
+	m.MType = "gauge"
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			m.ID = test.want.name
+			m.Value = &test.want.value
+			body, _ := json.Marshal(m)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+test.want.method, bytes.NewReader(body))
+			req.Header["Content-Type"] = []string{"application/json"}
+			require.NoError(t, err)
+			res, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			reply, _ := io.ReadAll(res.Body)
+			fmt.Printf("Reply: %s\n", string(reply))
+			err = json.Unmarshal(reply, &m)
+			if test.want.json {
+				require.NoError(t, err)
+				require.Equal(t, test.want.value, *m.Value)
+			}
+			defer func() {
+				err := res.Body.Close()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}()
+			assert.Equal(t, test.want.status, res.StatusCode)
+			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
 		})
 	}

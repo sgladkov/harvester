@@ -50,11 +50,11 @@ func MetricsRouter() chi.Router {
 	r.Use(logger.RequestLogger)
 	r.Get("/", getAllMetrics)
 	r.Route("/update/", func(r chi.Router) {
-		r.Post("/", updateMetricJson)
+		r.Post("/", updateMetricJSON)
 		r.Post("/{type}/{name}/{value}", updateMetric)
 	})
 	r.Route("/value/", func(r chi.Router) {
-		r.Post("/", getMetricJson)
+		r.Post("/", getMetricJSON)
 		r.Get("/{type}/{name}", getMetric)
 	})
 	return r
@@ -109,7 +109,7 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func updateMetricJson(w http.ResponseWriter, r *http.Request) {
+func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		logger.Log.Warn("Wrong Content-Type header", zap.String("Content-Type", contentType))
@@ -123,12 +123,14 @@ func updateMetricJson(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
 		return
 	}
+	//logger.Log.Info("updateMetricJSON", zap.Any("metrics", m))
 	m, err = storage.SetMetrics(m)
 	if err != nil {
 		logger.Log.Warn("Failed to save Metrics to storage", zap.Error(err))
 		http.Error(w, fmt.Sprintf("Failed to save Metrics to storage [%s]", err), http.StatusBadRequest)
 		return
 	}
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(&m)
 	if err != nil {
@@ -163,7 +165,7 @@ func getGauge(w http.ResponseWriter, r *http.Request) {
 	value, err := storage.GetGauge(name)
 	if err != nil {
 		logger.Log.Warn("failed to get gauge", zap.Error(err))
-		http.Error(w, fmt.Sprintf("failed to get gauge [%s]", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to get gauge [%s]", err), http.StatusNotFound)
 		return
 	}
 	logger.Log.Debug("requested gauge metric", zap.String("name", name), zap.Float64("value", value))
@@ -179,7 +181,7 @@ func getCounter(w http.ResponseWriter, r *http.Request) {
 	value, err := storage.GetCounter(name)
 	if err != nil {
 		logger.Log.Warn("failed to get counter", zap.Error(err))
-		http.Error(w, fmt.Sprintf("failed to get counter [%s]", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to get counter [%s]", err), http.StatusNotFound)
 		return
 	}
 	logger.Log.Debug("requested counter metric", zap.String("name", name), zap.Int64("value", value))
@@ -190,7 +192,7 @@ func getCounter(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getMetricJson(w http.ResponseWriter, r *http.Request) {
+func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		logger.Log.Warn("Wrong Content-Type header")
@@ -204,12 +206,14 @@ func getMetricJson(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to decode JSON to Metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
+	//logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
 	m, err = storage.GetMetrics(m)
 	if err != nil {
 		logger.Log.Warn("Failed to get Metrics from storage")
-		http.Error(w, fmt.Sprintf("Failed to get Metrics from storage [%s]", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Failed to get Metrics from storage [%s]", err), http.StatusNotFound)
 		return
 	}
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(&m)
 	if err != nil {
