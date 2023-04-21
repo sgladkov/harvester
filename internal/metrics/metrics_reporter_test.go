@@ -6,7 +6,7 @@ import (
 )
 
 func TestMetrics(t *testing.T) {
-	m := NewMetrics("server_url")
+	m := NewMetricsReporter("server_url")
 	require.Equal(t, m.server, "server_url")
 	require.Equal(t, 1, len(m.counters))
 	require.Contains(t, m.counters, "PollCount")

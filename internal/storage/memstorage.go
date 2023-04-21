@@ -1,7 +1,11 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
+	"github.com/sgladkov/harvester/internal/logger"
+	"github.com/sgladkov/harvester/internal/metrics"
+	"go.uber.org/zap"
 	"sync"
 )
 
@@ -11,6 +15,8 @@ type Storage interface {
 	GetCounter(name string) (int64, error)
 	SetCounter(name string, value int64) error
 	GetAll() string
+	SetMetrics(m metrics.Metrics) (metrics.Metrics, error)
+	GetMetrics(m metrics.Metrics) (metrics.Metrics, error)
 }
 
 type MemStorage struct {
@@ -71,4 +77,52 @@ func (m *MemStorage) GetAll() string {
 		res += fmt.Sprintf("%s=%d\n", n, v)
 	}
 	return res
+}
+
+func (s *MemStorage) SetMetrics(m metrics.Metrics) (metrics.Metrics, error) {
+	switch m.MType {
+	case "gauge":
+		s.SetGauge(m.ID, *m.Value)
+		val, err := s.GetGauge(m.ID)
+		if err != nil {
+			logger.Log.Warn("error while setting gauge", zap.Error(err))
+			return m, err
+		}
+		*m.Value = val
+	case "counter":
+		s.SetCounter(m.ID, *m.Delta)
+		val, err := s.GetCounter(m.ID)
+		if err != nil {
+			logger.Log.Warn("error while setting counter", zap.Error(err))
+			return m, err
+		}
+		*m.Delta = val
+	default:
+		logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
+		return m, errors.New("unknown metrics type")
+	}
+	return m, nil
+}
+
+func (s *MemStorage) GetMetrics(m metrics.Metrics) (metrics.Metrics, error) {
+	switch m.MType {
+	case "gauge":
+		val, err := s.GetGauge(m.ID)
+		if err != nil {
+			logger.Log.Warn("error while getting gauge", zap.Error(err))
+			return m, err
+		}
+		*m.Value = val
+	case "counter":
+		val, err := s.GetCounter(m.ID)
+		if err != nil {
+			logger.Log.Warn("error while setting counter", zap.Error(err))
+			return m, err
+		}
+		*m.Delta = val
+	default:
+		logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
+		return m, errors.New("unknown metrics type")
+	}
+	return m, nil
 }

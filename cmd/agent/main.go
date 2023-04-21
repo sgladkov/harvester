@@ -44,7 +44,7 @@ func main() {
 		*endpoint = "http://" + *endpoint
 	}
 
-	m := metrics.NewMetrics(*endpoint)
+	m := metrics.NewMetricsReporter(*endpoint)
 	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
 	defer pollTicker.Stop()
 	go func() {
@@ -53,7 +53,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println("Metrics are read")
+			fmt.Println("MetricsReporter are read")
 		}
 	}()
 	reportTicker := time.NewTicker(time.Duration(*reportInterval) * time.Second)
@@ -64,7 +64,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println("Metrics are reported")
+			fmt.Println("MetricsReporter are reported")
 		}
 	}()
 	//r := bufio.NewReader(os.Stdin)
