@@ -27,6 +27,7 @@ type (
 	responseData struct {
 		status int
 		size   int
+		body   []byte
 	}
 
 	loggingResponseWriter struct {
@@ -38,6 +39,7 @@ type (
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
+	r.responseData.body = append(r.responseData.body, b...)
 	return size, err
 }
 
@@ -64,6 +66,7 @@ func RequestLogger(h http.Handler) http.Handler {
 			zap.Duration("duration", time.Since(start)),
 			zap.Int("status", responseData.status),
 			zap.Int("size", responseData.size),
+			zap.String("replyBody", string(responseData.body)),
 		)
 	})
 }
