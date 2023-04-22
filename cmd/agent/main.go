@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/sgladkov/harvester/internal/connection"
 	"github.com/sgladkov/harvester/internal/metrics"
 	"os"
 	"strconv"
@@ -44,7 +45,8 @@ func main() {
 		*endpoint = "http://" + *endpoint
 	}
 
-	m := metrics.NewReporter(*endpoint)
+	r := connection.NewRestyClient(*endpoint)
+	m := metrics.NewReporter(r)
 	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
 	defer pollTicker.Stop()
 	go func() {

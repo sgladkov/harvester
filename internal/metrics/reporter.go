@@ -1,23 +1,22 @@
 package metrics
 
 import (
-	"fmt"
-	"github.com/go-resty/resty/v2"
+	"github.com/sgladkov/harvester/internal/connection"
 	"math/rand"
 	"runtime"
 	"sync"
 )
 
 type Reporter struct {
-	server   string
-	gauges   map[string]float64
-	counters map[string]int64
-	lock     sync.Mutex
+	connection connection.ServerConnection
+	gauges     map[string]float64
+	counters   map[string]int64
+	lock       sync.Mutex
 }
 
-func NewReporter(server string) *Reporter {
+func NewReporter(connection connection.ServerConnection) *Reporter {
 	result := Reporter{}
-	result.server = server
+	result.connection = connection
 	result.gauges = make(map[string]float64)
 	result.counters = make(map[string]int64)
 	result.counters["PollCount"] = 0
@@ -64,16 +63,12 @@ func (m *Reporter) Poll() error {
 func (m *Reporter) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	client := resty.New()
 	metrics := Metrics{}
 	for name, value := range m.gauges {
 		metrics.MType = "gauge"
 		metrics.ID = name
 		metrics.Value = &value
-		_, err := client.R().
-			SetHeader("Content-Type", "application/json").
-			SetBody(&metrics).
-			Post(fmt.Sprintf("%s/update/", m.server))
+		err := m.connection.UpdateMetrics(&metrics)
 		if err != nil {
 			return err
 		}
@@ -82,10 +77,7 @@ func (m *Reporter) Report() error {
 		metrics.MType = "counter"
 		metrics.ID = name
 		metrics.Delta = &value
-		_, err := client.R().
-			SetHeader("Content-Type", "application/json").
-			SetBody(&metrics).
-			Post(fmt.Sprintf("%s/update/", m.server))
+		err := m.connection.UpdateMetrics(&metrics)
 		if err != nil {
 			return err
 		}
