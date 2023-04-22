@@ -27,7 +27,13 @@ func gzipEncoder(_ *resty.Client, req *resty.Request) error {
 	}
 	var compressedBody bytes.Buffer
 	w, err := gzip.NewWriterLevel(&compressedBody, gzip.BestSpeed)
+	if err != nil {
+		return err
+	}
 	_, err = w.Write(originalBody)
+	if err != nil {
+		return err
+	}
 	err = w.Close()
 	if err != nil {
 		return err
