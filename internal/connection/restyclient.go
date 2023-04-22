@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sgladkov/harvester/internal/metrics"
+	"github.com/sgladkov/harvester/internal/interfaces"
 )
 
 type RestyClient struct {
@@ -14,8 +14,8 @@ type RestyClient struct {
 	server string
 }
 
-func gzipEncoder(c *resty.Client, req *resty.Request) error {
-	m := req.Body.(*metrics.Metrics)
+func gzipEncoder(_ *resty.Client, req *resty.Request) error {
+	m := req.Body.(*interfaces.Metrics)
 	if m == nil {
 		// compress Metrics updates only
 		return nil
@@ -28,7 +28,10 @@ func gzipEncoder(c *resty.Client, req *resty.Request) error {
 	var compressedBody bytes.Buffer
 	w, err := gzip.NewWriterLevel(&compressedBody, gzip.BestSpeed)
 	_, err = w.Write(originalBody)
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		return err
+	}
 	req.SetBody(compressedBody)
 	return nil
 }
@@ -42,7 +45,7 @@ func NewRestyClient(server string) *RestyClient {
 	return &result
 }
 
-func (c *RestyClient) UpdateMetrics(m *metrics.Metrics) error {
+func (c *RestyClient) UpdateMetrics(m *interfaces.Metrics) error {
 	_, err := c.client.R().
 		SetBody(m).
 		Post(fmt.Sprintf("%s/update/", c.server))

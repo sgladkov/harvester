@@ -1,20 +1,20 @@
 package metrics
 
 import (
-	"github.com/sgladkov/harvester/internal/connection"
+	"github.com/sgladkov/harvester/internal/interfaces"
 	"math/rand"
 	"runtime"
 	"sync"
 )
 
 type Reporter struct {
-	connection connection.ServerConnection
+	connection interfaces.ServerConnection
 	gauges     map[string]float64
 	counters   map[string]int64
 	lock       sync.Mutex
 }
 
-func NewReporter(connection connection.ServerConnection) *Reporter {
+func NewReporter(connection interfaces.ServerConnection) *Reporter {
 	result := Reporter{}
 	result.connection = connection
 	result.gauges = make(map[string]float64)
@@ -63,7 +63,7 @@ func (m *Reporter) Poll() error {
 func (m *Reporter) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	metrics := Metrics{}
+	metrics := interfaces.Metrics{}
 	for name, value := range m.gauges {
 		metrics.MType = "gauge"
 		metrics.ID = name

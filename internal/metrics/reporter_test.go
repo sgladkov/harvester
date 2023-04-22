@@ -1,13 +1,21 @@
 package metrics
 
 import (
+	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
+type MockConnection struct {
+}
+
+func (c *MockConnection) UpdateMetrics(_ *interfaces.Metrics) error {
+	return nil
+}
+
 func TestMetrics(t *testing.T) {
-	m := NewReporter("server_url")
-	require.Equal(t, m.server, "server_url")
+	c := MockConnection{}
+	m := NewReporter(&c)
 	require.Equal(t, 1, len(m.counters))
 	require.Contains(t, m.counters, "PollCount")
 	require.Equal(t, int64(0), m.counters["PollCount"])
@@ -17,5 +25,5 @@ func TestMetrics(t *testing.T) {
 	require.Contains(t, m.counters, "PollCount")
 	require.Equal(t, int64(1), m.counters["PollCount"])
 	require.Equal(t, 28, len(m.gauges))
-	require.Error(t, m.Report())
+	require.NoError(t, m.Report())
 }
