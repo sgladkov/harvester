@@ -21,6 +21,7 @@ func gzipEncoder(_ *resty.Client, req *resty.Request) error {
 		return nil
 	}
 	req.SetHeader("Content-Encoding", "gzip")
+	req.SetHeader("Accept-Encoding", "gzip")
 	originalBody, err := json.Marshal(m)
 	if err != nil {
 		return err

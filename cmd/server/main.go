@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/sgladkov/harvester/internal/gziper"
 	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
@@ -48,6 +49,7 @@ func MetricsRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Middlewares()
 	r.Use(logger.RequestLogger)
+	r.Use(gziper.GzipHandle)
 	r.Get("/", getAllMetrics)
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/", updateMetricJSON)
