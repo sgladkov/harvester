@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-chi/chi"
-	"github.com/sgladkov/harvester/internal/gziper"
 	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
+	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -49,7 +49,7 @@ func MetricsRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Middlewares()
 	r.Use(logger.RequestLogger)
-	r.Use(gziper.GzipHandle)
+	r.Use(utils.GzipHandle)
 	r.Get("/", getAllMetrics)
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/", updateMetricJSON)
@@ -112,8 +112,8 @@ func updateCounter(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
+	if !utils.ContainsHeaderValue(r, "Content-Type", "application/json") {
+		contentType := r.Header.Get("Content-Type")
 		logger.Log.Warn("Wrong Content-Type header", zap.String("Content-Type", contentType))
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
@@ -125,7 +125,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
 		return
 	}
-	//logger.Log.Info("updateMetricJSON", zap.Any("metrics", m))
+	logger.Log.Info("updateMetricJSON", zap.Any("metrics", m))
 	m, err = storage.SetMetrics(m)
 	if err != nil {
 		logger.Log.Warn("Failed to save Metrics to storage", zap.Error(err))
@@ -195,9 +195,9 @@ func getCounter(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMetricJSON(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		logger.Log.Warn("Wrong Content-Type header")
+	if !utils.ContainsHeaderValue(r, "Content-Type", "application/json") {
+		contentType := r.Header.Get("Content-Type")
+		logger.Log.Warn("Wrong Content-Type header", zap.String("Content-Type", contentType))
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}

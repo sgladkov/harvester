@@ -1,4 +1,4 @@
-package gziper
+package utils
 
 import (
 	"compress/gzip"
@@ -18,7 +18,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 
 func GzipHandle(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !containsHeaderValue(r, "Accept-Encoding", "gzip") {
+		if !ContainsHeaderValue(r, "Accept-Encoding", "gzip") {
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -35,7 +35,7 @@ func GzipHandle(h http.Handler) http.Handler {
 	})
 }
 
-func containsHeaderValue(r *http.Request, header string, value string) bool {
+func ContainsHeaderValue(r *http.Request, header string, value string) bool {
 	values := r.Header.Values(header)
 	for _, v := range values {
 		fields := strings.FieldsFunc(v, func(c rune) bool { return c == ' ' || c == ',' || c == ';' })
