@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/sgladkov/harvester/internal/interfaces"
@@ -74,8 +73,8 @@ func (c *RestyClient) UpdateMetrics(m *interfaces.Metrics) error {
 		return err
 	}
 	if reply.IsError() {
-		return errors.New(fmt.Sprintf("Failed to report metrics, status code is %d,  reply is [%s]",
-			reply.StatusCode(), string(reply.Body())))
+		return fmt.Errorf("Failed to report metrics, status code is %d,  reply is [%s]",
+			reply.StatusCode(), string(reply.Body()))
 	}
 	logger.Log.Info("Reply",
 		zap.String("body", string(reply.Body())),
