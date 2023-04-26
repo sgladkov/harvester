@@ -132,7 +132,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to save Metrics to storage [%s]", err), http.StatusBadRequest)
 		return
 	}
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(&m)
 	if err != nil {
@@ -142,6 +142,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllMetrics(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "plain/txt")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte(storage.GetAll()))
 	if err != nil {
@@ -215,7 +216,7 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to get Metrics from storage [%s]", err), http.StatusNotFound)
 		return
 	}
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(&m)
 	if err != nil {

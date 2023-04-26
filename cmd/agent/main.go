@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/sgladkov/harvester/internal/connection"
+	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/metrics"
+	"go.uber.org/zap"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +14,10 @@ import (
 )
 
 func main() {
+	err := logger.Initialize("info")
+	if err != nil {
+		log.Fatal(err)
+	}
 	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	pollInterval := flag.Int("p", 2, "poll interval")
 	reportInterval := flag.Int("r", 10, "report interval")
@@ -25,8 +31,8 @@ func main() {
 	if len(reportStr) > 0 {
 		val, err := strconv.ParseInt(reportStr, 10, 32)
 		if err != nil {
-			fmt.Printf("Failed to interpret REPORT_INTERVAL[%s] environment variable: %s\n", reportStr, err)
-			return
+			logger.Log.Fatal("Failed to interpret REPORT_INTERVAL environment variable",
+				zap.String("value", reportStr), zap.Error(err))
 		}
 		*reportInterval = int(val)
 	}
@@ -34,8 +40,8 @@ func main() {
 	if len(pollStr) > 0 {
 		val, err := strconv.ParseInt(pollStr, 10, 32)
 		if err != nil {
-			fmt.Printf("Failed to interpret POLL_INTERVAL[%s] environment variable: %s\n", pollStr, err)
-			return
+			logger.Log.Fatal("Failed to interpret POLL_INTERVAL environment variable",
+				zap.String("value", pollStr), zap.Error(err))
 		}
 		*pollInterval = int(val)
 	}
@@ -53,9 +59,9 @@ func main() {
 		for range pollTicker.C {
 			err := m.Poll()
 			if err != nil {
-				fmt.Println(err)
+				logger.Log.Warn("Failed to poll", zap.Error(err))
 			}
-			fmt.Println("Reporter are read")
+			logger.Log.Info("Metrics are read")
 		}
 	}()
 	reportTicker := time.NewTicker(time.Duration(*reportInterval) * time.Second)
@@ -64,9 +70,9 @@ func main() {
 		for range reportTicker.C {
 			err := m.Report()
 			if err != nil {
-				fmt.Println(err)
+				logger.Log.Warn("Failed to report", zap.Error(err))
 			}
-			fmt.Println("Reporter are reported")
+			logger.Log.Info("Metrics are reported")
 		}
 	}()
 	//r := bufio.NewReader(os.Stdin)
