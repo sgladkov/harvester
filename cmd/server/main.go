@@ -14,16 +14,20 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 var storage storage2.Storage
 
 func main() {
-	storage = storage2.NewMemStorage()
 	// check arguments
 	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	logLevel := flag.String("l", "info", "log level (fatal,  error,  warn, info, debug)")
+	storeInterval := flag.Int("i", 300, "metrics store interval")
+	fileStorage := flag.String("s", "/tmp/metrics-db.json", "file to store ans restore metrics")
+	restoreFlag := flag.Bool("r", true, "should server read initial metrics value from the file")
 	flag.Parse()
+
 	// check environment
 	address := os.Getenv("ADDRESS")
 	if len(address) > 0 {
@@ -38,10 +42,60 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	envStoreInterval := os.Getenv("STORE_INTERVAL")
+	if len(envStoreInterval) > 0 {
+		val, err := strconv.ParseInt(envStoreInterval, 10, 32)
+		if err != nil {
+			logger.Log.Fatal("Failed to interpret STORE_INTERVAL environment variable",
+				zap.String("value", envStoreInterval), zap.Error(err))
+		}
+		*storeInterval = int(val)
+	}
+	envFileStorage := os.Getenv("FILE_STORAGE_PATH")
+	if len(envFileStorage) > 0 {
+		*fileStorage = envFileStorage
+	}
+	envRestore, exist := os.LookupEnv("RESTORE")
+	if exist {
+		val, err := strconv.ParseBool(envRestore)
+		if err != nil {
+			logger.Log.Fatal("Failed to interpret RESTORE environment variable",
+				zap.String("value", envRestore), zap.Error(err))
+		}
+		*restoreFlag = val
+	}
+
+	storage = storage2.NewMemStorage(*fileStorage, *storeInterval == 0)
+	if *restoreFlag {
+		err := storage.Read()
+		if err != nil {
+			logger.Log.Fatal("failed to read initial metrics values from file", zap.Error(err))
+		}
+	}
+
+	if *storeInterval > 0 {
+		storeTicker := time.NewTicker(time.Duration(*storeInterval) * time.Second)
+		defer storeTicker.Stop()
+		go func() {
+			for range storeTicker.C {
+				err := storage.Save()
+				if err != nil {
+					logger.Log.Warn("Failed to save metrics", zap.Error(err))
+				}
+				logger.Log.Info("Metrics are read")
+			}
+		}()
+	}
+
 	logger.Log.Info("Starting server", zap.String("address", *endpoint))
 	err = http.ListenAndServe(*endpoint, MetricsRouter())
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Fatal("failed to start server", zap.Error(err))
+	}
+	err = storage.Save()
+	if err != nil {
+		logger.Log.Fatal("failed to store metrics", zap.Error(err))
 	}
 }
 

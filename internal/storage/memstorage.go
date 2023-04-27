@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	"go.uber.org/zap"
+	"os"
 	"sync"
 )
 
@@ -17,25 +19,31 @@ type Storage interface {
 	GetAll() string
 	SetMetrics(m interfaces.Metrics) (interfaces.Metrics, error)
 	GetMetrics(m interfaces.Metrics) (interfaces.Metrics, error)
+	Save() error
+	Read() error
 }
 
 type MemStorage struct {
-	gauges   map[string]float64
-	counters map[string]int64
-	lock     sync.Mutex
+	Gauges       map[string]float64
+	Counters     map[string]int64
+	lock         sync.Mutex
+	fileStorage  string
+	saveOnChange bool
 }
 
-func NewMemStorage() *MemStorage {
+func NewMemStorage(fileStorage string, saveOnChange bool) *MemStorage {
 	result := MemStorage{}
-	result.gauges = make(map[string]float64)
-	result.counters = make(map[string]int64)
+	result.Gauges = make(map[string]float64)
+	result.Counters = make(map[string]int64)
+	result.fileStorage = fileStorage
+	result.saveOnChange = saveOnChange
 	return &result
 }
 
 func (s *MemStorage) GetGauge(name string) (float64, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	value, exists := s.gauges[name]
+	value, exists := s.Gauges[name]
 	if !exists {
 		return 0.0, fmt.Errorf("no gauge [%s]", name)
 	}
@@ -45,14 +53,17 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 func (s *MemStorage) SetGauge(name string, value float64) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.gauges[name] = value
+	s.Gauges[name] = value
+	if s.saveOnChange {
+		return s.Save()
+	}
 	return nil
 }
 
 func (s *MemStorage) GetCounter(name string) (int64, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	value, exists := s.counters[name]
+	value, exists := s.Counters[name]
 	if !exists {
 		return 0, fmt.Errorf("no counter [%s]", name)
 	}
@@ -62,7 +73,10 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
 func (s *MemStorage) SetCounter(name string, value int64) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.counters[name] += value
+	s.Counters[name] += value
+	if s.saveOnChange {
+		return s.Save()
+	}
 	return nil
 }
 
@@ -70,10 +84,10 @@ func (s *MemStorage) GetAll() string {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	var res string
-	for n, v := range s.gauges {
+	for n, v := range s.Gauges {
 		res += fmt.Sprintf("%s=%g\n", n, v)
 	}
-	for n, v := range s.counters {
+	for n, v := range s.Counters {
 		res += fmt.Sprintf("%s=%d\n", n, v)
 	}
 	return res
@@ -141,4 +155,33 @@ func (s *MemStorage) GetMetrics(m interfaces.Metrics) (interfaces.Metrics, error
 		return m, errors.New("unknown metrics type")
 	}
 	return m, nil
+}
+
+func (s *MemStorage) Save() error {
+	data, err := json.Marshal(s)
+	if err != nil {
+		logger.Log.Error("failed to save metrics", zap.Error(err))
+		return err
+	}
+	err = os.WriteFile(s.fileStorage, data, 0666)
+	if err != nil {
+		logger.Log.Error("failed to save metrics", zap.String("file", s.fileStorage), zap.Error(err))
+		return err
+	}
+	logger.Log.Info("metrics are saved", zap.String("file", s.fileStorage))
+	return nil
+}
+
+func (s *MemStorage) Read() error {
+	data, err := os.ReadFile(s.fileStorage)
+	if err != nil {
+		logger.Log.Error("failed to read metrics", zap.String("file", s.fileStorage), zap.Error(err))
+		return err
+	}
+	err = json.Unmarshal(data, s)
+	if err != nil {
+		logger.Log.Error("failed to decode data for metrics", zap.Error(err))
+		return err
+	}
+	return nil
 }
