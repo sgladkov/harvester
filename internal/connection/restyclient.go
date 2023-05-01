@@ -73,7 +73,7 @@ func (c *RestyClient) UpdateMetrics(m *interfaces.Metrics) error {
 		return err
 	}
 	if reply.IsError() {
-		return fmt.Errorf("Failed to report metrics, status code is %d,  reply is [%s]",
+		return fmt.Errorf("failed to report metrics, status code is %d,  reply is [%s]",
 			reply.StatusCode(), string(reply.Body()))
 	}
 	logger.Log.Info("Reply",
