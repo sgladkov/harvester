@@ -70,7 +70,7 @@ func main() {
 	if *restoreFlag {
 		err := storage.Read()
 		if err != nil {
-			logger.Log.Fatal("failed to read initial metrics values from file", zap.Error(err))
+			logger.Log.Warn("failed to read initial metrics values from file", zap.Error(err))
 		}
 	}
 
