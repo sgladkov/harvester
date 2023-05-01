@@ -142,7 +142,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllMetrics(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "plain/txt")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte(storage.GetAll()))
 	if err != nil {
