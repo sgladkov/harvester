@@ -16,10 +16,11 @@ type Reporter struct {
 }
 
 func NewReporter(connection interfaces.ServerConnection) *Reporter {
-	result := Reporter{}
-	result.connection = connection
-	result.gauges = make(map[string]float64)
-	result.counters = make(map[string]int64)
+	result := Reporter{
+		connection: connection,
+		gauges:     make(map[string]float64),
+		counters:   make(map[string]int64),
+	}
 	result.counters["PollCount"] = 0
 	return &result
 }

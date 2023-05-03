@@ -32,12 +32,12 @@ type MemStorage struct {
 }
 
 func NewMemStorage(fileStorage string, saveOnChange bool) *MemStorage {
-	result := MemStorage{}
-	result.Gauges = make(map[string]float64)
-	result.Counters = make(map[string]int64)
-	result.fileStorage = fileStorage
-	result.saveOnChange = saveOnChange
-	return &result
+	return &MemStorage{
+		Gauges:       make(map[string]float64),
+		Counters:     make(map[string]int64),
+		fileStorage:  fileStorage,
+		saveOnChange: saveOnChange,
+	}
 }
 
 func (s *MemStorage) GetGauge(name string) (float64, error) {
