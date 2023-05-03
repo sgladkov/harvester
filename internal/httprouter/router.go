@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
-	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 )
 
-var storage storage2.Storage
+var storage interfaces.Storage
 
-func MetricsRouter(s storage2.Storage) chi.Router {
+func MetricsRouter(s interfaces.Storage) chi.Router {
 	storage = s
 	r := chi.NewRouter()
 	r.Middlewares()

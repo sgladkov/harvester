@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/sgladkov/harvester/internal/httprouter"
+	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"go.uber.org/zap"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-var storage storage2.Storage
+var storage interfaces.Storage
 
 func main() {
 	// check arguments
