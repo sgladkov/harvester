@@ -1,4 +1,4 @@
-package utils
+package httprouter
 
 import (
 	"compress/gzip"
@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"strings"
+	"time"
 )
 
 type gzipWriter struct {
@@ -60,15 +60,49 @@ func GzipHandle(h http.Handler) http.Handler {
 	})
 }
 
-func ContainsHeaderValue(r *http.Request, header string, value string) bool {
-	values := r.Header.Values(header)
-	for _, v := range values {
-		fields := strings.FieldsFunc(v, func(c rune) bool { return c == ' ' || c == ',' || c == ';' })
-		for _, f := range fields {
-			if f == value {
-				return true
-			}
-		}
+type (
+	responseData struct {
+		status int
+		size   int
+		body   []byte
 	}
-	return false
+
+	loggingResponseWriter struct {
+		http.ResponseWriter
+		responseData *responseData
+	}
+)
+
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size
+	r.responseData.body = append(r.responseData.body, b...)
+	return size, err
+}
+
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.responseData.status = statusCode
+}
+
+func RequestLogger(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		responseData := &responseData{
+			status: 0,
+			size:   0,
+		}
+		lw := loggingResponseWriter{
+			ResponseWriter: w,
+			responseData:   responseData,
+		}
+		h.ServeHTTP(&lw, r)
+		logger.Log.Info("request",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.Duration("duration", time.Since(start)),
+			zap.Int("status", responseData.status),
+			zap.Int("size", responseData.size),
+		)
+	})
 }
