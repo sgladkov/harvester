@@ -66,7 +66,8 @@ func main() {
 		*restoreFlag = val
 	}
 
-	storage = storage2.NewMemStorage(*fileStorage, *storeInterval == 0)
+	saveSettingsOnChange := *storeInterval == 0
+	storage = storage2.NewMemStorage(*fileStorage, saveSettingsOnChange)
 	if *restoreFlag {
 		err := storage.Read()
 		if err != nil {
