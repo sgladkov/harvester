@@ -146,26 +146,67 @@ func (s *MemStorage) GetMetrics(m models.Metrics) (models.Metrics, error) {
 }
 
 func (s *MemStorage) Save() error {
+	f, err := os.Create(s.fileStorage)
+	if err != nil {
+		logger.Log.Error("failed to create file to save metrics", zap.String("file", s.fileStorage), zap.Error(err))
+		return err
+	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			logger.Log.Error("failed to close file with saved metrics", zap.Error(err))
+		}
+	}()
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	data, err := json.Marshal(s)
 	if err != nil {
 		logger.Log.Error("failed to save metrics", zap.Error(err))
 		return err
 	}
-	err = os.WriteFile(s.fileStorage, data, 0666)
+	_, err = f.Write(data)
 	if err != nil {
-		logger.Log.Error("failed to save metrics", zap.String("file", s.fileStorage), zap.Error(err))
+		logger.Log.Error("failed to save metrics", zap.Error(err))
 		return err
 	}
+
 	logger.Log.Info("metrics are saved", zap.String("file", s.fileStorage))
 	return nil
 }
 
 func (s *MemStorage) Read() error {
-	data, err := os.ReadFile(s.fileStorage)
+	f, err := os.Open(s.fileStorage)
 	if err != nil {
-		logger.Log.Error("failed to read metrics", zap.String("file", s.fileStorage), zap.Error(err))
+		logger.Log.Error("failed to open file to read metrics", zap.String("file", s.fileStorage), zap.Error(err))
 		return err
 	}
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			logger.Log.Error("failed to close file with read metrics", zap.Error(err))
+		}
+	}()
+
+	info, err := f.Stat()
+	if err != nil {
+		logger.Log.Error("failed to get info about the file to read metrics",
+			zap.String("file", s.fileStorage), zap.Error(err))
+		return err
+	}
+
+	data := make([]byte, info.Size())
+
+	_, err = f.Read(data)
+	if err != nil {
+		logger.Log.Error("failed to read metrics", zap.Error(err))
+		return err
+	}
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	err = json.Unmarshal(data, s)
 	if err != nil {
 		logger.Log.Error("failed to decode data for metrics", zap.Error(err))
