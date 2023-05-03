@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
+	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
 	"os"
 	"sync"
@@ -17,8 +17,8 @@ type Storage interface {
 	GetCounter(name string) (int64, error)
 	SetCounter(name string, value int64) error
 	GetAll() string
-	SetMetrics(m interfaces.Metrics) (interfaces.Metrics, error)
-	GetMetrics(m interfaces.Metrics) (interfaces.Metrics, error)
+	SetMetrics(m models.Metrics) (models.Metrics, error)
+	GetMetrics(m models.Metrics) (models.Metrics, error)
 	Save() error
 	Read() error
 }
@@ -93,7 +93,7 @@ func (s *MemStorage) GetAll() string {
 	return res
 }
 
-func (s *MemStorage) SetMetrics(m interfaces.Metrics) (interfaces.Metrics, error) {
+func (s *MemStorage) SetMetrics(m models.Metrics) (models.Metrics, error) {
 	switch m.MType {
 	case "gauge":
 		if m.Value == nil {
@@ -134,7 +134,7 @@ func (s *MemStorage) SetMetrics(m interfaces.Metrics) (interfaces.Metrics, error
 	return m, nil
 }
 
-func (s *MemStorage) GetMetrics(m interfaces.Metrics) (interfaces.Metrics, error) {
+func (s *MemStorage) GetMetrics(m models.Metrics) (models.Metrics, error) {
 	switch m.MType {
 	case "gauge":
 		val, err := s.GetGauge(m.ID)

@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 	"math/rand"
 	"runtime"
 	"sync"
@@ -63,7 +64,7 @@ func (m *Reporter) Poll() error {
 func (m *Reporter) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	metrics := interfaces.Metrics{}
+	metrics := models.Metrics{}
 	for name, value := range m.gauges {
 		metrics.MType = "gauge"
 		metrics.ID = name

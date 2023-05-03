@@ -1,4 +1,4 @@
-package interfaces
+package models
 
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики

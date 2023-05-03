@@ -5,8 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-chi/chi"
-	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
+	"github.com/sgladkov/harvester/internal/models"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
@@ -173,7 +173,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}
-	var m interfaces.Metrics
+	var m models.Metrics
 	err := json.NewDecoder(r.Body).Decode(&m)
 	if err != nil {
 		logger.Log.Warn("Failed to decode JSON to Metrics", zap.Error(err))
@@ -257,7 +257,7 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}
-	var m interfaces.Metrics
+	var m models.Metrics
 	err := json.NewDecoder(r.Body).Decode(&m)
 	if err != nil {
 		logger.Log.Warn("Failed to decode JSON to Metrics")

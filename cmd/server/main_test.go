@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -266,7 +266,7 @@ func TestCounterJSON(t *testing.T) {
 	storage = storage2.NewMemStorage("", false)
 	ts := httptest.NewServer(MetricsRouter())
 	defer ts.Close()
-	m := interfaces.Metrics{}
+	m := models.Metrics{}
 	m.MType = "counter"
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -355,7 +355,7 @@ func TestGougeJSON(t *testing.T) {
 	storage = storage2.NewMemStorage("", false)
 	ts := httptest.NewServer(MetricsRouter())
 	defer ts.Close()
-	m := interfaces.Metrics{}
+	m := models.Metrics{}
 	m.MType = "gauge"
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

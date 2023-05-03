@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
+	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ type RestyClient struct {
 
 func gzipEncoder(_ *resty.Client, req *resty.Request) error {
 	logger.Log.Info("gzipEncoder")
-	m := req.Body.(*interfaces.Metrics)
+	m := req.Body.(*models.Metrics)
 	if m == nil {
 		// compress Metrics updates only
 		logger.Log.Warn("Failed to get metrics from request body")
@@ -65,7 +65,7 @@ func NewRestyClient(server string) *RestyClient {
 	return &result
 }
 
-func (c *RestyClient) UpdateMetrics(m *interfaces.Metrics) error {
+func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 	reply, err := c.client.R().
 		SetBody(m).
 		Post(fmt.Sprintf("%s/update/", c.server))

@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 type MockConnection struct {
 }
 
-func (c *MockConnection) UpdateMetrics(_ *interfaces.Metrics) error {
+func (c *MockConnection) UpdateMetrics(_ *models.Metrics) error {
 	return nil
 }
 
