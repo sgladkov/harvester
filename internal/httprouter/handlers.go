@@ -26,6 +26,12 @@ func updateMetric(w http.ResponseWriter, r *http.Request) {
 
 func updateGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
+	err := models.IsValidMetricsID(name)
+	if err != nil {
+		logger.Log.Warn("failed to update gauge", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to update gauge [%s]", err), http.StatusBadRequest)
+		return
+	}
 	value, err := strconv.ParseFloat(chi.URLParam(r, "value"), 64)
 	if err != nil {
 		logger.Log.Warn("failed to update gauge", zap.Error(err))
@@ -44,6 +50,12 @@ func updateGauge(w http.ResponseWriter, r *http.Request) {
 
 func updateCounter(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
+	err := models.IsValidMetricsID(name)
+	if err != nil {
+		logger.Log.Warn("failed to update gauge", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to update gauge [%s]", err), http.StatusBadRequest)
+		return
+	}
 	value, err := strconv.ParseInt(chi.URLParam(r, "value"), 10, 64)
 	if err != nil {
 		logger.Log.Warn("failed to update counter", zap.Error(err))
@@ -72,6 +84,12 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Log.Warn("Failed to decode JSON to Metrics", zap.Error(err))
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
+		return
+	}
+	err = models.IsValidMetricsID(m.ID)
+	if err != nil {
+		logger.Log.Warn("failed to update metrics", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to update metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
 	logger.Log.Info("updateMetricJSON", zap.Any("metrics", m))
@@ -114,6 +132,12 @@ func getMetric(w http.ResponseWriter, r *http.Request) {
 
 func getGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
+	err := models.IsValidMetricsID(name)
+	if err != nil {
+		logger.Log.Warn("failed to get gauge", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to get gauge [%s]", err), http.StatusBadRequest)
+		return
+	}
 	value, err := storage.GetGauge(name)
 	if err != nil {
 		logger.Log.Warn("failed to get gauge", zap.Error(err))
@@ -130,6 +154,12 @@ func getGauge(w http.ResponseWriter, r *http.Request) {
 
 func getCounter(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
+	err := models.IsValidMetricsID(name)
+	if err != nil {
+		logger.Log.Warn("failed to get counter", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to get counter [%s]", err), http.StatusBadRequest)
+		return
+	}
 	value, err := storage.GetCounter(name)
 	if err != nil {
 		logger.Log.Warn("failed to get counter", zap.Error(err))
@@ -156,6 +186,12 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Log.Warn("Failed to decode JSON to Metrics")
 		http.Error(w, fmt.Sprintf("Failed to decode JSON to Metrics [%s]", err), http.StatusBadRequest)
+		return
+	}
+	err = models.IsValidMetricsID(m.ID)
+	if err != nil {
+		logger.Log.Warn("failed to get metrics", zap.Error(err))
+		http.Error(w, fmt.Sprintf("failed to get metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
 	//logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
