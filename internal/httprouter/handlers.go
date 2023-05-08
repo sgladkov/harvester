@@ -26,7 +26,7 @@ func updateMetric(w http.ResponseWriter, r *http.Request) {
 
 func updateGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	err := models.IsValidMetricsID(name)
+	err := models.ValidateMetricsID(name)
 	if err != nil {
 		logger.Log.Warn("failed to update gauge", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to update gauge [%s]", err), http.StatusBadRequest)
@@ -50,7 +50,7 @@ func updateGauge(w http.ResponseWriter, r *http.Request) {
 
 func updateCounter(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	err := models.IsValidMetricsID(name)
+	err := models.ValidateMetricsID(name)
 	if err != nil {
 		logger.Log.Warn("failed to update gauge", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to update gauge [%s]", err), http.StatusBadRequest)
@@ -86,7 +86,7 @@ func updateMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
 		return
 	}
-	err = models.IsValidMetricsID(m.ID)
+	err = models.ValidateMetricsID(m.ID)
 	if err != nil {
 		logger.Log.Warn("failed to update metrics", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to update metrics [%s]", err), http.StatusBadRequest)
@@ -132,7 +132,7 @@ func getMetric(w http.ResponseWriter, r *http.Request) {
 
 func getGauge(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	err := models.IsValidMetricsID(name)
+	err := models.ValidateMetricsID(name)
 	if err != nil {
 		logger.Log.Warn("failed to get gauge", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to get gauge [%s]", err), http.StatusBadRequest)
@@ -154,7 +154,7 @@ func getGauge(w http.ResponseWriter, r *http.Request) {
 
 func getCounter(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	err := models.IsValidMetricsID(name)
+	err := models.ValidateMetricsID(name)
 	if err != nil {
 		logger.Log.Warn("failed to get counter", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to get counter [%s]", err), http.StatusBadRequest)
@@ -188,7 +188,7 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to decode JSON to Metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
-	err = models.IsValidMetricsID(m.ID)
+	err = models.ValidateMetricsID(m.ID)
 	if err != nil {
 		logger.Log.Warn("failed to get metrics", zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to get metrics [%s]", err), http.StatusBadRequest)

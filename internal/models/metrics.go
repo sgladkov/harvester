@@ -23,7 +23,7 @@ func notLetterOrDigit(r rune) bool {
 	return true
 }
 
-func IsValidMetricsID(id string) error {
+func ValidateMetricsID(id string) error {
 	if len(id) == 0 {
 		return errors.New("empty metrics id")
 	}
