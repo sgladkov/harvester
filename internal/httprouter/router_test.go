@@ -65,7 +65,7 @@ func TestMetricsRouter(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false)))
+	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false), ""))
 	defer ts.Close()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestCounter(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false)))
+	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false), ""))
 	defer ts.Close()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -181,7 +181,7 @@ func TestGauge(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false)))
+	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false), ""))
 	defer ts.Close()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -260,7 +260,7 @@ func TestCounterJSON(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false)))
+	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false), ""))
 	defer ts.Close()
 	m := models.Metrics{}
 	m.MType = "counter"
@@ -348,7 +348,7 @@ func TestGougeJSON(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false)))
+	ts := httptest.NewServer(MetricsRouter(storage2.NewMemStorage("", false), ""))
 	defer ts.Close()
 	m := models.Metrics{}
 	m.MType = "gauge"

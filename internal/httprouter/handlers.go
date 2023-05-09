@@ -1,9 +1,11 @@
 package httprouter
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi"
+	_ "github.com/jackc/pgx/v5"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
@@ -208,4 +210,19 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		logger.Log.Warn("Failed to write Metrics JSON to body")
 		return
 	}
+}
+
+func ping(w http.ResponseWriter, _ *http.Request) {
+	db, err := sql.Open("postgresql", databaseDSN)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			logger.Log.Warn("failed to close database", zap.Error(err))
+		}
+	}()
+	w.WriteHeader(http.StatusOK)
 }

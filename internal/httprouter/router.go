@@ -6,14 +6,17 @@ import (
 )
 
 var storage interfaces.Storage
+var databaseDSN string
 
-func MetricsRouter(s interfaces.Storage) chi.Router {
+func MetricsRouter(s interfaces.Storage, dsn string) chi.Router {
+	databaseDSN = dsn
 	storage = s
 	r := chi.NewRouter()
 	r.Middlewares()
 	r.Use(RequestLogger)
 	r.Use(GzipHandle)
 	r.Get("/", getAllMetrics)
+	r.Get("/ping", ping)
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/", updateMetricJSON)
 		r.Post("/{type}/{name}/{value}", updateMetric)

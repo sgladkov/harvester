@@ -50,7 +50,7 @@ func main() {
 	}
 
 	logger.Log.Info("Starting server", zap.String("address", *config.Endpoint))
-	err = http.ListenAndServe(*config.Endpoint, httprouter.MetricsRouter(storage))
+	err = http.ListenAndServe(*config.Endpoint, httprouter.MetricsRouter(storage, *config.DatabaseDSN))
 	if err != nil {
 		logger.Log.Fatal("failed to start server", zap.Error(err))
 	}
