@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/sgladkov/harvester/internal/connection"
 	"github.com/sgladkov/harvester/internal/logger"
-	"github.com/sgladkov/harvester/internal/metrics"
+	"github.com/sgladkov/harvester/internal/reporter"
 	"go.uber.org/zap"
 	"log"
 	"os"
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	r := connection.NewRestyClient(*endpoint)
-	m := metrics.NewReporter(r)
+	m := reporter.NewReporter(r)
 	pollTicker := time.NewTicker(time.Duration(*pollInterval) * time.Second)
 	defer pollTicker.Stop()
 	go func() {

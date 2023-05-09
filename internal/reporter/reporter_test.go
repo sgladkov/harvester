@@ -1,4 +1,4 @@
-package metrics
+package reporter
 
 import (
 	"github.com/sgladkov/harvester/internal/models"

@@ -43,7 +43,7 @@ func (s *MemStorage) SetGauge(name string, value float64) error {
 	defer s.lock.Unlock()
 	s.Gauges[name] = value
 	if s.saveOnChange {
-		return s.Save()
+		return s.doSave()
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func (s *MemStorage) SetCounter(name string, value int64) error {
 	defer s.lock.Unlock()
 	s.Counters[name] += value
 	if s.saveOnChange {
-		return s.Save()
+		return s.doSave()
 	}
 	return nil
 }
@@ -146,6 +146,13 @@ func (s *MemStorage) GetMetrics(m models.Metrics) (models.Metrics, error) {
 }
 
 func (s *MemStorage) Save() error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return s.doSave()
+}
+
+func (s *MemStorage) doSave() error {
 	f, err := os.Create(s.fileStorage)
 	if err != nil {
 		logger.Log.Error("failed to create file to save metrics", zap.String("file", s.fileStorage), zap.Error(err))
@@ -157,9 +164,6 @@ func (s *MemStorage) Save() error {
 			logger.Log.Error("failed to close file with saved metrics", zap.Error(err))
 		}
 	}()
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
 
 	data, err := json.Marshal(s)
 	if err != nil {
