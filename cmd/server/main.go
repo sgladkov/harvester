@@ -1,149 +1,61 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/sgladkov/harvester/internal/config"
+	"github.com/sgladkov/harvester/internal/httprouter"
+	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/logger"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
+	"go.uber.org/zap"
+	"log"
 	"net/http"
-	"os"
-	"strconv"
+	"time"
 )
 
-var storage storage2.Storage
+var storage interfaces.Storage
 
 func main() {
-	storage = storage2.NewMemStorage()
-	// check arguments
-	endpoint := flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
-	flag.Parse()
-	// check environment
-	address := os.Getenv("ADDRESS")
-	if len(address) > 0 {
-		*endpoint = address
+	config := config.ServerConfig{}
+	logLevel, err := config.Read()
+	errLog := logger.Initialize(logLevel)
+	if errLog != nil {
+		log.Fatal(errLog)
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println(*endpoint)
-	err := http.ListenAndServe(*endpoint, MetricsRouter())
-	if err != nil {
-		panic(err)
+	saveSettingsOnChange := *config.StoreInterval == 0
+	storage = storage2.NewMemStorage(*config.FileStorage, saveSettingsOnChange)
+	if *config.RestoreFlag {
+		err := storage.Read()
+		if err != nil {
+			logger.Log.Warn("failed to read initial metrics values from file", zap.Error(err))
+		}
 	}
-}
 
-func MetricsRouter() chi.Router {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Get("/", getAllMetrics)
-	r.Route("/update/", func(r chi.Router) {
-		r.Post("/{type}/{name}/{value}", updateMetric)
-	})
-	r.Route("/value/", func(r chi.Router) {
-		r.Get("/{type}/{name}", getMetric)
-	})
-	return r
-}
+	if *config.StoreInterval > 0 {
+		storeTicker := time.NewTicker(time.Duration(*config.StoreInterval) * time.Second)
+		defer storeTicker.Stop()
+		go func() {
+			for range storeTicker.C {
+				err := storage.Save()
+				if err != nil {
+					logger.Log.Warn("Failed to save metrics", zap.Error(err))
+				} else {
+					logger.Log.Info("Metrics are saved")
+				}
+			}
+		}()
+	}
 
-func updateMetric(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "type")
-	switch metricType {
-	case "gauge":
-		updateGauge(w, r)
-	case "counter":
-		updateCounter(w, r)
-	default:
-		fmt.Printf("Unkvown metric type [%s]\n", metricType)
-		w.WriteHeader(http.StatusBadRequest)
-	}
-}
-
-func updateGauge(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "name")
-	value, err := strconv.ParseFloat(chi.URLParam(r, "value"), 64)
+	logger.Log.Info("Starting server", zap.String("address", *config.Endpoint))
+	err = http.ListenAndServe(*config.Endpoint, httprouter.MetricsRouter(storage))
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		logger.Log.Fatal("failed to start server", zap.Error(err))
 	}
-	fmt.Printf("Gauge metric: %s = %g\n", name, value)
-	err = storage.SetGauge(name, value)
+	err = storage.Save()
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	fmt.Println(storage)
-	w.WriteHeader(http.StatusOK)
-}
-
-func updateCounter(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "name")
-	value, err := strconv.ParseInt(chi.URLParam(r, "value"), 10, 64)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	fmt.Printf("Counter metric: %s = %d\n", name, value)
-	err = storage.SetCounter(name, value)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	fmt.Println(storage)
-	w.WriteHeader(http.StatusOK)
-}
-
-func getAllMetrics(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(storage.GetAll()))
-	if err != nil {
-		fmt.Printf("Failed to write responce body: %s\n", err)
-	}
-}
-
-func getMetric(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "type")
-	switch metricType {
-	case "gauge":
-		getGauge(w, r)
-	case "counter":
-		getCounter(w, r)
-	default:
-		fmt.Printf("Unkvown metric type [%s]\n", metricType)
-		w.WriteHeader(http.StatusBadRequest)
-	}
-}
-
-func getGauge(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "name")
-	value, err := storage.GetGauge(name)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	fmt.Printf("Gauge metric: %s = %g\n", name, value)
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(fmt.Sprintf("%g", value)))
-	if err != nil {
-		fmt.Printf("Failed to write responce body: %s\n", err)
-	}
-}
-
-func getCounter(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "name")
-	value, err := storage.GetCounter(name)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	fmt.Printf("Counter metric: %s = %d\n", name, value)
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(fmt.Sprintf("%d", value)))
-	if err != nil {
-		fmt.Printf("Failed to write responce body: %s\n", err)
+		logger.Log.Fatal("failed to store metrics", zap.Error(err))
 	}
 }

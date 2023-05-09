@@ -1,32 +1,31 @@
-package metrics
+package reporter
 
 import (
-	"errors"
-	"fmt"
-	"io"
+	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 	"math/rand"
-	"net/http"
 	"runtime"
 	"sync"
 )
 
-type Metrics struct {
-	server   string
-	gauges   map[string]float64
-	counters map[string]int64
-	lock     sync.Mutex
+type Reporter struct {
+	connection interfaces.ServerConnection
+	gauges     map[string]float64
+	counters   map[string]int64
+	lock       sync.Mutex
 }
 
-func NewMetrics(server string) *Metrics {
-	result := Metrics{}
-	result.server = server
-	result.gauges = make(map[string]float64)
-	result.counters = make(map[string]int64)
+func NewReporter(connection interfaces.ServerConnection) *Reporter {
+	result := Reporter{
+		connection: connection,
+		gauges:     make(map[string]float64),
+		counters:   make(map[string]int64),
+	}
 	result.counters["PollCount"] = 0
 	return &result
 }
 
-func (m *Metrics) Poll() error {
+func (m *Reporter) Poll() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	data := runtime.MemStats{}
@@ -63,46 +62,24 @@ func (m *Metrics) Poll() error {
 	return nil
 }
 
-func (m *Metrics) Report() error {
+func (m *Reporter) Report() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	client := &http.Client{}
+	metrics := models.Metrics{}
 	for name, value := range m.gauges {
-		request, err := http.NewRequest(http.MethodPost,
-			fmt.Sprintf("%s/update/gauge/%s/%f", m.server, name, value),
-			nil)
-		if err != nil {
-			return err
-		}
-		request.Header.Add("Content-Type", "text/plain")
-		resp, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(resp.Status)
-		}
-		_, err = io.ReadAll(resp.Body)
+		metrics.MType = "gauge"
+		metrics.ID = name
+		metrics.Value = &value
+		err := m.connection.UpdateMetrics(&metrics)
 		if err != nil {
 			return err
 		}
 	}
 	for name, value := range m.counters {
-		request, err := http.NewRequest(http.MethodPost,
-			fmt.Sprintf("%s/update/counter/%s/%d", m.server, name, value),
-			nil)
-		if err != nil {
-			return err
-		}
-		request.Header.Add("Content-Type", "text/plain")
-		resp, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(resp.Status)
-		}
-		_, err = io.ReadAll(resp.Body)
+		metrics.MType = "counter"
+		metrics.ID = name
+		metrics.Delta = &value
+		err := m.connection.UpdateMetrics(&metrics)
 		if err != nil {
 			return err
 		}
