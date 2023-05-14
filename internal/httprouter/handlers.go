@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi"
-	_ "github.com/jackc/pgx/v5"
+	//_ "github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
@@ -213,8 +214,10 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func ping(w http.ResponseWriter, _ *http.Request) {
-	db, err := sql.Open("postgresql", databaseDSN)
+	logger.Log.Info("ping", zap.String("DSN", databaseDSN))
+	db, err := sql.Open("postgres", databaseDSN)
 	if err != nil {
+		logger.Log.Warn("Failed to connect DB", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
