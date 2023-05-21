@@ -230,7 +230,9 @@ func (s *PgStorage) Read() error {
 	}
 	defer func() {
 		err = rowsGauges.Close()
-		logger.Log.Error("Failed to close rowset", zap.Error(err))
+		if err != nil {
+			logger.Log.Error("Failed to close rowset", zap.Error(err))
+		}
 	}()
 	rowsCounters, err := s.db.Query("SELECT * FROM Counters")
 	if err != nil {
@@ -239,7 +241,9 @@ func (s *PgStorage) Read() error {
 	}
 	defer func() {
 		err = rowsCounters.Close()
-		logger.Log.Error("Failed to close rowset", zap.Error(err))
+		if err != nil {
+			logger.Log.Error("Failed to close rowset", zap.Error(err))
+		}
 	}()
 
 	s.lock.Lock()
