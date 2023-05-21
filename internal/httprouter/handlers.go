@@ -229,3 +229,28 @@ func ping(w http.ResponseWriter, _ *http.Request) {
 	}()
 	w.WriteHeader(http.StatusOK)
 }
+
+func batchUpdate(w http.ResponseWriter, r *http.Request) {
+	if !ContainsHeaderValue(r, "Content-Type", "application/json") {
+		contentType := r.Header.Get("Content-Type")
+		logger.Log.Warn("Wrong Content-Type header", zap.String("Content-Type", contentType))
+		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
+		return
+	}
+	var m []models.Metrics
+	err := json.NewDecoder(r.Body).Decode(&m)
+	if err != nil {
+		logger.Log.Warn("Failed to decode JSON to Metrics", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
+		return
+	}
+	logger.Log.Info("batchUpdate", zap.Any("metrics", m))
+	err = storage.SetMetricsBatch(m)
+	if err != nil {
+		logger.Log.Warn("Failed to save Metrics to storage", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Failed to save Metrics to storage [%s]", err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
