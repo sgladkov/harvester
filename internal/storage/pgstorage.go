@@ -175,8 +175,7 @@ func (s *PgStorage) doSave() error {
 		}
 	}()
 
-	stmtGauges, err := tx.Prepare("INSERT INTO Gauges (id, value) VALUES (?, ?) " +
-		"ON CONFLICT (id) DO UPDATE SET value=EXCLUDED.value")
+	stmtGauges, err := tx.Prepare("INSERT INTO Gauges (id, value) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET value=EXCLUDED.value")
 	if err != nil {
 		logger.Log.Error("Failed to prepare query", zap.Error(err))
 		return err
@@ -188,7 +187,7 @@ func (s *PgStorage) doSave() error {
 		}
 	}()
 
-	stmtCounters, err := tx.Prepare("INSERT INTO Counters (id, value) VALUES (?, ?) " +
+	stmtCounters, err := tx.Prepare("INSERT INTO Counters (id, value) VALUES ($1, $2) " +
 		"ON CONFLICT (id) DO UPDATE SET value=EXCLUDED.value")
 	if err != nil {
 		logger.Log.Error("Failed to prepare query", zap.Error(err))
@@ -200,9 +199,6 @@ func (s *PgStorage) doSave() error {
 			logger.Log.Error("Failed to close statement", zap.Error(err))
 		}
 	}()
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
 
 	for id, value := range s.Gauges {
 		_, err = stmtGauges.Exec(id, value)

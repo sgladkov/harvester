@@ -27,7 +27,7 @@ func main() {
 
 	saveSettingsOnChange := *config.StoreInterval == 0
 	if len(*config.DatabaseDSN) > 0 {
-		storage, err = storage2.NewPgStorage(*config.DatabaseDSN, saveSettingsOnChange)
+		storage, err = storage2.NewPgStorage(*config.DatabaseDSN, true)
 		if err != nil {
 			logger.Log.Fatal("Failed to create PgStorage", zap.Error(err))
 		}
