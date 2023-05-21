@@ -39,7 +39,7 @@ func main() {
 	defer reportTicker.Stop()
 	go func() {
 		for range reportTicker.C {
-			err := m.Report()
+			err := m.BatchReport()
 			if err != nil {
 				logger.Log.Warn("Failed to report", zap.Error(err))
 			}

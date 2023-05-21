@@ -86,3 +86,24 @@ func (m *Reporter) Report() error {
 	}
 	return nil
 }
+
+func (m *Reporter) BatchReport() error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	var batch []models.Metrics
+	for name, value := range m.gauges {
+		metrics := models.Metrics{}
+		metrics.MType = "gauge"
+		metrics.ID = name
+		metrics.Value = &value
+		batch = append(batch, metrics)
+	}
+	for name, value := range m.counters {
+		metrics := models.Metrics{}
+		metrics.MType = "counter"
+		metrics.ID = name
+		metrics.Delta = &value
+		batch = append(batch, metrics)
+	}
+	return m.connection.BatchUpdateMetrics(batch)
+}
