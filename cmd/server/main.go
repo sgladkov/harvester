@@ -26,11 +26,18 @@ func main() {
 	}
 
 	saveSettingsOnChange := *config.StoreInterval == 0
-	storage = storage2.NewMemStorage(*config.FileStorage, saveSettingsOnChange)
+	if len(*config.DatabaseDSN) > 0 {
+		storage, err = storage2.NewPgStorage(*config.DatabaseDSN, saveSettingsOnChange)
+		if err != nil {
+			logger.Log.Fatal("Failed to create PgStorage", zap.Error(err))
+		}
+	} else {
+		storage = storage2.NewMemStorage(*config.FileStorage, saveSettingsOnChange)
+	}
 	if *config.RestoreFlag {
 		err := storage.Read()
 		if err != nil {
-			logger.Log.Warn("failed to read initial metrics values from file", zap.Error(err))
+			logger.Log.Warn("failed to read initial metrics values", zap.Error(err))
 		}
 	}
 
