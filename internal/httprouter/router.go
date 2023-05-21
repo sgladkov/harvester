@@ -17,7 +17,7 @@ func MetricsRouter(s interfaces.Storage, dsn string) chi.Router {
 	r.Use(GzipHandle)
 	r.Get("/", getAllMetrics)
 	r.Get("/ping", ping)
-	r.Post("/batchUpdate/", batchUpdate)
+	r.Post("/updates/", batchUpdate)
 	r.Route("/update/", func(r chi.Router) {
 		r.Post("/", updateMetricJSON)
 		r.Post("/{type}/{name}/{value}", updateMetric)
