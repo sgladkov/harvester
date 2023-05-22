@@ -13,6 +13,10 @@ func (c *MockConnection) UpdateMetrics(_ *models.Metrics) error {
 	return nil
 }
 
+func (c *MockConnection) BatchUpdateMetrics(_ []models.Metrics) error {
+	return nil
+}
+
 func TestMetrics(t *testing.T) {
 	c := MockConnection{}
 	m := NewReporter(&c)
