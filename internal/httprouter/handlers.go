@@ -256,7 +256,7 @@ func batchUpdate(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(storage)
 	if err != nil {
 		logger.Log.Warn("failed to get metrics", zap.Error(err))
-		http.Error(w, fmt.Sprintf("Failed to get Metrics", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Failed to get Metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
 	w.Write(data)
