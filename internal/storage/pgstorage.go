@@ -284,6 +284,11 @@ func (s *PgStorage) Read() error {
 		}
 		s.Gauges[id] = valueG
 	}
+	err = rowsGauges.Err()
+	if err != nil {
+		logger.Log.Error("error while iterating rows", zap.Error(err))
+		return err
+	}
 
 	s.Counters = make(map[string]int64)
 	var valueC int64
@@ -294,6 +299,11 @@ func (s *PgStorage) Read() error {
 			return err
 		}
 		s.Counters[id] = valueC
+	}
+	err = rowsCounters.Err()
+	if err != nil {
+		logger.Log.Error("error while iterating rows", zap.Error(err))
+		return err
 	}
 
 	return nil
