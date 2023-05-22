@@ -38,6 +38,33 @@ func NewPgStorage(databaseDSN string, saveOnChange bool) (*PgStorage, error) {
 	}, nil
 }
 
+func initDB(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		logger.Log.Error("Failed to create db transaction", zap.Error(err))
+		return err
+	}
+	defer func() {
+		err = tx.Rollback()
+		if err != nil {
+			logger.Log.Info("Failed to rollback db transaction", zap.String("error", err.Error()))
+		}
+	}()
+
+	_, err = tx.Exec("CREATE TABLE IF NOT EXISTS Gauges (id varchar(1024) PRIMARY KEY, value double precision)")
+	if err != nil {
+		logger.Log.Error("Failed to create db table", zap.Error(err))
+		return err
+	}
+	_, err = tx.Exec("CREATE TABLE IF NOT EXISTS Counters (id varchar(1024) PRIMARY KEY, value BIGINT)")
+	if err != nil {
+		logger.Log.Error("Failed to create db table", zap.Error(err))
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (s *PgStorage) GetGauge(name string) (float64, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -270,33 +297,6 @@ func (s *PgStorage) Read() error {
 	}
 
 	return nil
-}
-
-func initDB(db *sql.DB) error {
-	tx, err := db.Begin()
-	if err != nil {
-		logger.Log.Error("Failed to create db transaction", zap.Error(err))
-		return err
-	}
-	defer func() {
-		err = tx.Rollback()
-		if err != nil {
-			logger.Log.Info("Failed to rollback db transaction", zap.String("error", err.Error()))
-		}
-	}()
-
-	_, err = tx.Exec("CREATE TABLE IF NOT EXISTS Gauges (id varchar(1024) PRIMARY KEY, value double precision)")
-	if err != nil {
-		logger.Log.Error("Failed to create db table", zap.Error(err))
-		return err
-	}
-	_, err = tx.Exec("CREATE TABLE IF NOT EXISTS Counters (id varchar(1024) PRIMARY KEY, value INTEGER)")
-	if err != nil {
-		logger.Log.Error("Failed to create db table", zap.Error(err))
-		return err
-	}
-
-	return tx.Commit()
 }
 
 func (s *PgStorage) SetMetricsBatch(metricsBatch []models.Metrics) error {
