@@ -322,7 +322,7 @@ func (s *PgStorage) SetMetricsBatch(metricsBatch []models.Metrics) error {
 				logger.Log.Warn("invalid counter value")
 				return errors.New("invalid counter value")
 			}
-			s.Counters[m.ID] = *m.Delta
+			s.Counters[m.ID] += *m.Delta
 		default:
 			logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
 			return errors.New("unknown metrics type")
