@@ -197,7 +197,7 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to get metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
-	//logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
+	logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
 	m, err = storage.GetMetrics(m)
 	if err != nil {
 		logger.Log.Warn("Failed to get Metrics from storage")
