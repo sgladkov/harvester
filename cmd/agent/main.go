@@ -5,6 +5,7 @@ import (
 	"github.com/sgladkov/harvester/internal/connection"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/reporter"
+	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
 	"log"
 	"time"
@@ -39,18 +40,21 @@ func main() {
 	defer reportTicker.Stop()
 	go func() {
 		for range reportTicker.C {
-			err := m.BatchReport()
+			err := utils.RetryOnError(
+				func() error {
+					return m.BatchReport()
+				},
+				func(err error) bool {
+					return true
+				},
+			)
 			if err != nil {
 				logger.Log.Warn("Failed to report", zap.Error(err))
 			}
 			logger.Log.Info("Metrics are reported")
 		}
 	}()
-	//r := bufio.NewReader(os.Stdin)
-	//fmt.Println("Press Enter to exit")
-	//r.ReadLine()
 	for {
 		time.Sleep(time.Second)
 	}
-
 }

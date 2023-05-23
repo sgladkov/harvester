@@ -1,14 +1,19 @@
 package main
 
 import (
+	"errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sgladkov/harvester/internal/config"
 	"github.com/sgladkov/harvester/internal/httprouter"
 	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/logger"
 	storage2 "github.com/sgladkov/harvester/internal/storage"
+	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -27,7 +32,16 @@ func main() {
 
 	saveSettingsOnChange := *config.StoreInterval == 0
 	if len(*config.DatabaseDSN) > 0 {
-		storage, err = storage2.NewPgStorage(*config.DatabaseDSN, true)
+		err := utils.RetryOnError(
+			func() error {
+				storage, err = storage2.NewPgStorage(*config.DatabaseDSN, true)
+				return err
+			},
+			func(err error) bool {
+				var pgErr *pgconn.PgError
+				return errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code)
+			},
+		)
 		if err != nil {
 			logger.Log.Fatal("Failed to create PgStorage", zap.Error(err))
 		}
@@ -35,7 +49,14 @@ func main() {
 		storage = storage2.NewMemStorage(*config.FileStorage, saveSettingsOnChange)
 	}
 	if *config.RestoreFlag {
-		err := storage.Read()
+		err := utils.RetryOnError(
+			func() error {
+				return storage.Read()
+			},
+			func(err error) bool {
+				return errors.As(err, os.ErrPermission)
+			},
+		)
 		if err != nil {
 			logger.Log.Warn("failed to read initial metrics values", zap.Error(err))
 		}
@@ -46,7 +67,16 @@ func main() {
 		defer storeTicker.Stop()
 		go func() {
 			for range storeTicker.C {
-				err := storage.Save()
+				err := utils.RetryOnError(
+					func() error {
+						return storage.Save()
+					},
+					func(err error) bool {
+						var pgErr *pgconn.PgError
+						return errors.As(err, os.ErrPermission) ||
+							(errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code))
+					},
+				)
 				if err != nil {
 					logger.Log.Warn("Failed to save metrics", zap.Error(err))
 				} else {
@@ -61,7 +91,16 @@ func main() {
 	if err != nil {
 		logger.Log.Fatal("failed to start server", zap.Error(err))
 	}
-	err = storage.Save()
+	err = utils.RetryOnError(
+		func() error {
+			return storage.Save()
+		},
+		func(err error) bool {
+			var pgErr *pgconn.PgError
+			return errors.As(err, os.ErrPermission) ||
+				(errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code))
+		},
+	)
 	if err != nil {
 		logger.Log.Fatal("failed to store metrics", zap.Error(err))
 	}
