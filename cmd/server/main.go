@@ -54,7 +54,7 @@ func main() {
 				return storage.Read()
 			},
 			func(err error) bool {
-				return errors.As(err, os.ErrPermission)
+				return errors.As(err, &os.ErrPermission)
 			},
 		)
 		if err != nil {
@@ -73,7 +73,7 @@ func main() {
 					},
 					func(err error) bool {
 						var pgErr *pgconn.PgError
-						return errors.As(err, os.ErrPermission) ||
+						return errors.As(err, &os.ErrPermission) ||
 							(errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code))
 					},
 				)
@@ -97,7 +97,7 @@ func main() {
 		},
 		func(err error) bool {
 			var pgErr *pgconn.PgError
-			return errors.As(err, os.ErrPermission) ||
+			return errors.As(err, &os.ErrPermission) ||
 				(errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code))
 		},
 	)
