@@ -33,6 +33,7 @@ func (m *Reporter) Poll() error {
 	m.gauges["Alloc"] = float64(data.Alloc)
 	m.gauges["BuckHashSys"] = float64(data.BuckHashSys)
 	m.gauges["Frees"] = float64(data.Frees)
+	m.gauges["FreeMemory"] = float64(data.Frees)
 	m.gauges["GCCPUFraction"] = data.GCCPUFraction
 	m.gauges["GCSys"] = float64(data.GCSys)
 	m.gauges["HeapAlloc"] = float64(data.HeapAlloc)
@@ -57,6 +58,8 @@ func (m *Reporter) Poll() error {
 	m.gauges["StackSys"] = float64(data.StackSys)
 	m.gauges["Sys"] = float64(data.Sys)
 	m.gauges["TotalAlloc"] = float64(data.TotalAlloc)
+	m.gauges["TotalMemory"] = float64(data.TotalAlloc)
+	m.gauges["CPUUtilization1"] = float64(1)
 	m.gauges["RandomValue"] = rand.Float64()
 	m.counters["PollCount"]++
 	return nil
