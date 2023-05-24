@@ -28,6 +28,6 @@ func TestMetrics(t *testing.T) {
 	require.Equal(t, 1, len(m.counters))
 	require.Contains(t, m.counters, "PollCount")
 	require.Equal(t, int64(1), m.counters["PollCount"])
-	require.Equal(t, 28, len(m.gauges))
+	require.Equal(t, 31, len(m.gauges))
 	require.NoError(t, m.Report())
 }
