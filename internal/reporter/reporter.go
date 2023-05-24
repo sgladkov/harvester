@@ -59,7 +59,7 @@ func (m *Reporter) Poll() error {
 	m.gauges["Sys"] = float64(data.Sys)
 	m.gauges["TotalAlloc"] = float64(data.TotalAlloc)
 	m.gauges["TotalMemory"] = float64(data.TotalAlloc)
-	m.gauges["CPUUtilization1"] = float64(1)
+	m.gauges["CPUutilization1"] = float64(1)
 	m.gauges["RandomValue"] = rand.Float64()
 	m.counters["PollCount"]++
 	return nil
