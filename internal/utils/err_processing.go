@@ -8,7 +8,7 @@ import (
 
 func RetryOnError(f func() error, errCheck func(error) bool) error {
 	var count = 0
-	timeouts := [...]int{1, 3, 5}
+	timeouts := [3]int{1, 3, 5}
 	for {
 		err := f()
 		if err != nil {
@@ -16,7 +16,7 @@ func RetryOnError(f func() error, errCheck func(error) bool) error {
 				logger.Log.Warn("error, retry", zap.Error(err))
 				time.Sleep(time.Duration(timeouts[count]) * time.Second)
 				count++
-				if count > 2 {
+				if count >= len(timeouts) {
 					return err
 				}
 				continue
