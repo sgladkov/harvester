@@ -1,9 +1,10 @@
 package utils
 
 import (
+	"time"
+
 	"github.com/sgladkov/harvester/internal/logger"
 	"go.uber.org/zap"
-	"time"
 )
 
 func RetryOnError(f func() error, errCheck func(error) bool) error {

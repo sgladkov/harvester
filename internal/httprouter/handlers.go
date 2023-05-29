@@ -4,14 +4,17 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi"
+
 	//_ "github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
-	"net/http"
-	"strconv"
 )
 
 func updateMetric(w http.ResponseWriter, r *http.Request) {

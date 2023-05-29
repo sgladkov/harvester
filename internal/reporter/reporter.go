@@ -1,11 +1,12 @@
 package reporter
 
 import (
-	"github.com/sgladkov/harvester/internal/interfaces"
-	"github.com/sgladkov/harvester/internal/models"
 	"math/rand"
 	"runtime"
 	"sync"
+
+	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 )
 
 type Reporter struct {

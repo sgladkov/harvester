@@ -2,6 +2,11 @@ package main
 
 import (
 	"errors"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sgladkov/harvester/internal/config"
@@ -11,10 +16,6 @@ import (
 	storage2 "github.com/sgladkov/harvester/internal/storage"
 	"github.com/sgladkov/harvester/internal/utils"
 	"go.uber.org/zap"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 var storage interfaces.Storage
