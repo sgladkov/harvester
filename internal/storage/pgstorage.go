@@ -19,14 +19,8 @@ type PgStorage struct {
 	saveOnChange bool
 }
 
-func NewPgStorage(databaseDSN string, saveOnChange bool) (*PgStorage, error) {
-	logger.Log.Info("Trying to open database", zap.String("DSN", databaseDSN))
-	db, err := sql.Open("postgres", databaseDSN)
-	if err != nil {
-		logger.Log.Error("Failed to open database", zap.Error(err))
-		return nil, err
-	}
-	err = initDB(db)
+func NewPgStorage(db *sql.DB, saveOnChange bool) (*PgStorage, error) {
+	err := initDB(db)
 	if err != nil {
 		logger.Log.Error("Failed to init database", zap.Error(err))
 		return nil, err

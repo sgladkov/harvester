@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 )
 
 var storage interfaces.Storage
+var db *sql.DB
 
 func main() {
 	config := config.ServerConfig{}
@@ -33,9 +35,33 @@ func main() {
 
 	saveSettingsOnChange := *config.StoreInterval == 0
 	if len(*config.DatabaseDSN) > 0 {
+		logger.Log.Info("Trying to open database", zap.String("DSN", *config.DatabaseDSN))
 		err := utils.RetryOnError(
 			func() error {
-				storage, err = storage2.NewPgStorage(*config.DatabaseDSN, true)
+				db, err = sql.Open("postgres", *config.DatabaseDSN)
+				if err != nil {
+					return err
+				}
+				return nil
+			},
+			func(err error) bool {
+				var pgErr *pgconn.PgError
+				return errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code)
+			},
+		)
+		if err != nil {
+			logger.Log.Fatal("Failed to open database", zap.Error(err))
+		}
+		defer func() {
+			err := db.Close()
+			if err != nil {
+				logger.Log.Warn("failed to close database", zap.Error(err))
+			}
+		}()
+
+		err = utils.RetryOnError(
+			func() error {
+				storage, err = storage2.NewPgStorage(db, true)
 				return err
 			},
 			func(err error) bool {
@@ -88,7 +114,7 @@ func main() {
 	}
 
 	logger.Log.Info("Starting server", zap.String("address", *config.Endpoint))
-	err = http.ListenAndServe(*config.Endpoint, httprouter.MetricsRouter(storage, *config.DatabaseDSN))
+	err = http.ListenAndServe(*config.Endpoint, httprouter.MetricsRouter(storage, db))
 	if err != nil {
 		logger.Log.Fatal("failed to start server", zap.Error(err))
 	}

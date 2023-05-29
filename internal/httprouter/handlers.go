@@ -1,7 +1,6 @@
 package httprouter
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
@@ -217,19 +216,13 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 }
 
 func ping(w http.ResponseWriter, _ *http.Request) {
-	logger.Log.Info("ping", zap.String("DSN", databaseDSN))
-	db, err := sql.Open("postgres", databaseDSN)
-	if err != nil {
-		logger.Log.Warn("Failed to connect DB", zap.Error(err))
+	logger.Log.Info("ping")
+	if database == nil {
+		logger.Log.Warn("Database is not inited")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer func() {
-		err := db.Close()
-		if err != nil {
-			logger.Log.Warn("failed to close database", zap.Error(err))
-		}
-	}()
+	logger.Log.Info("Database is inited")
 	w.WriteHeader(http.StatusOK)
 }
 

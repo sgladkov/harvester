@@ -1,15 +1,17 @@
 package httprouter
 
 import (
+	"database/sql"
+
 	"github.com/go-chi/chi"
 	"github.com/sgladkov/harvester/internal/interfaces"
 )
 
 var storage interfaces.Storage
-var databaseDSN string
+var database *sql.DB
 
-func MetricsRouter(s interfaces.Storage, dsn string) chi.Router {
-	databaseDSN = dsn
+func MetricsRouter(s interfaces.Storage, db *sql.DB) chi.Router {
+	database = db
 	storage = s
 	r := chi.NewRouter()
 	r.Middlewares()
