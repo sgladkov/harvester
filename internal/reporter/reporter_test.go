@@ -13,6 +13,10 @@ func (c *MockConnection) UpdateMetrics(_ *models.Metrics) error {
 	return nil
 }
 
+func (c *MockConnection) BatchUpdateMetrics(_ []models.Metrics) error {
+	return nil
+}
+
 func TestMetrics(t *testing.T) {
 	c := MockConnection{}
 	m := NewReporter(&c)
@@ -24,6 +28,6 @@ func TestMetrics(t *testing.T) {
 	require.Equal(t, 1, len(m.counters))
 	require.Contains(t, m.counters, "PollCount")
 	require.Equal(t, int64(1), m.counters["PollCount"])
-	require.Equal(t, 28, len(m.gauges))
+	require.Equal(t, 31, len(m.gauges))
 	require.NoError(t, m.Report())
 }

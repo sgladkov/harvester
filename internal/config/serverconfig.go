@@ -13,6 +13,7 @@ type ServerConfig struct {
 	StoreInterval *int
 	FileStorage   *string
 	RestoreFlag   *bool
+	DatabaseDSN   *string
 }
 
 func (sc *ServerConfig) Read() (string, error) {
@@ -23,6 +24,7 @@ func (sc *ServerConfig) Read() (string, error) {
 	sc.StoreInterval = flag.Int("i", 300, "metrics store interval")
 	sc.FileStorage = flag.String("s", "/tmp/metrics-db.json", "file to store ans restore metrics")
 	sc.RestoreFlag = flag.Bool("r", true, "should server read initial metrics value from the file")
+	sc.DatabaseDSN = flag.String("d", "", "database connection string for PostgreSQL")
 	flag.Parse()
 
 	// check environment
@@ -56,6 +58,10 @@ func (sc *ServerConfig) Read() (string, error) {
 				envRestore, err)
 		}
 		*sc.RestoreFlag = val
+	}
+	envDatabaseDSN := os.Getenv("DATABASE_DSN")
+	if len(envDatabaseDSN) > 0 {
+		*sc.DatabaseDSN = envDatabaseDSN
 	}
 
 	return logLevel, nil

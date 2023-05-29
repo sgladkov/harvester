@@ -2,11 +2,12 @@ package httprouter
 
 import (
 	"compress/gzip"
-	"github.com/sgladkov/harvester/internal/logger"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/sgladkov/harvester/internal/logger"
+	"go.uber.org/zap"
 )
 
 type gzipWriter struct {

@@ -3,12 +3,17 @@ package httprouter
 import (
 	"encoding/json"
 	"fmt"
+
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi"
+
+	//_ "github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
-	"net/http"
-	"strconv"
 )
 
 func updateMetric(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +199,7 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to get metrics [%s]", err), http.StatusBadRequest)
 		return
 	}
-	//logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
+	logger.Log.Info("getMetricJSON", zap.Any("metrics", m))
 	m, err = storage.GetMetrics(m)
 	if err != nil {
 		logger.Log.Warn("Failed to get Metrics from storage")
@@ -208,4 +213,47 @@ func getMetricJSON(w http.ResponseWriter, r *http.Request) {
 		logger.Log.Warn("Failed to write Metrics JSON to body")
 		return
 	}
+}
+
+func ping(w http.ResponseWriter, _ *http.Request) {
+	logger.Log.Info("ping")
+	if database == nil {
+		logger.Log.Warn("Database is not inited")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logger.Log.Info("Database is inited")
+	w.WriteHeader(http.StatusOK)
+}
+
+func batchUpdate(w http.ResponseWriter, r *http.Request) {
+	if !ContainsHeaderValue(r, "Content-Type", "application/json") {
+		contentType := r.Header.Get("Content-Type")
+		logger.Log.Warn("Wrong Content-Type header", zap.String("Content-Type", contentType))
+		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
+		return
+	}
+	var m []models.Metrics
+	err := json.NewDecoder(r.Body).Decode(&m)
+	if err != nil {
+		logger.Log.Warn("Failed to decode JSON to Metrics", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", err), http.StatusBadRequest)
+		return
+	}
+	logger.Log.Info("batchUpdate", zap.Any("metrics", m))
+	err = storage.SetMetricsBatch(m)
+	if err != nil {
+		logger.Log.Warn("Failed to save Metrics to storage", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Failed to save Metrics to storage [%s]", err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	data, err := json.Marshal(storage)
+	if err != nil {
+		logger.Log.Warn("failed to get metrics", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Failed to get Metrics [%s]", err), http.StatusBadRequest)
+		return
+	}
+	w.Write(data)
 }

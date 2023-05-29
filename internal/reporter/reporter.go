@@ -1,11 +1,12 @@
 package reporter
 
 import (
-	"github.com/sgladkov/harvester/internal/interfaces"
-	"github.com/sgladkov/harvester/internal/models"
 	"math/rand"
 	"runtime"
 	"sync"
+
+	"github.com/sgladkov/harvester/internal/interfaces"
+	"github.com/sgladkov/harvester/internal/models"
 )
 
 type Reporter struct {
@@ -33,6 +34,7 @@ func (m *Reporter) Poll() error {
 	m.gauges["Alloc"] = float64(data.Alloc)
 	m.gauges["BuckHashSys"] = float64(data.BuckHashSys)
 	m.gauges["Frees"] = float64(data.Frees)
+	m.gauges["FreeMemory"] = float64(data.Frees)
 	m.gauges["GCCPUFraction"] = data.GCCPUFraction
 	m.gauges["GCSys"] = float64(data.GCSys)
 	m.gauges["HeapAlloc"] = float64(data.HeapAlloc)
@@ -57,6 +59,8 @@ func (m *Reporter) Poll() error {
 	m.gauges["StackSys"] = float64(data.StackSys)
 	m.gauges["Sys"] = float64(data.Sys)
 	m.gauges["TotalAlloc"] = float64(data.TotalAlloc)
+	m.gauges["TotalMemory"] = float64(data.TotalAlloc)
+	m.gauges["CPUutilization1"] = float64(1)
 	m.gauges["RandomValue"] = rand.Float64()
 	m.counters["PollCount"]++
 	return nil
@@ -85,4 +89,25 @@ func (m *Reporter) Report() error {
 		}
 	}
 	return nil
+}
+
+func (m *Reporter) BatchReport() error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	var batch []models.Metrics
+	for name, value := range m.gauges {
+		metrics := models.Metrics{}
+		metrics.MType = "gauge"
+		metrics.ID = name
+		metrics.Value = &value
+		batch = append(batch, metrics)
+	}
+	for name, value := range m.counters {
+		metrics := models.Metrics{}
+		metrics.MType = "counter"
+		metrics.ID = name
+		metrics.Delta = &value
+		batch = append(batch, metrics)
+	}
+	return m.connection.BatchUpdateMetrics(batch)
 }

@@ -218,3 +218,38 @@ func (s *MemStorage) Read() error {
 	}
 	return nil
 }
+
+func (s *MemStorage) SetMetricsBatch(metricsBatch []models.Metrics) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	for _, m := range metricsBatch {
+		err := models.ValidateMetricsID(m.ID)
+		if err != nil {
+			logger.Log.Warn("invalid metrics ID", zap.Error(err))
+			return err
+		}
+
+		switch m.MType {
+		case "gauge":
+			if m.Value == nil {
+				logger.Log.Warn("invalid gauge value")
+				return errors.New("invalid gauge value")
+			}
+			s.Gauges[m.ID] = *m.Value
+		case "counter":
+			if m.Delta == nil {
+				logger.Log.Warn("invalid counter value")
+				return errors.New("invalid counter value")
+			}
+			s.Counters[m.ID] += *m.Delta
+		default:
+			logger.Log.Warn("unknown metric type", zap.String("metric", m.MType))
+			return errors.New("unknown metrics type")
+		}
+	}
+	if s.saveOnChange {
+		return s.doSave()
+	}
+	return nil
+}

@@ -12,4 +12,5 @@ type Storage interface {
 	GetMetrics(m models.Metrics) (models.Metrics, error)
 	Save() error
 	Read() error
+	SetMetricsBatch(metricsBatch []models.Metrics) error
 }
