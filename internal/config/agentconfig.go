@@ -12,12 +12,14 @@ type AgentConfig struct {
 	Endpoint       *string
 	PollInterval   *int
 	ReportInterval *int
+	Key            *string
 }
 
 func (ac *AgentConfig) Read() error {
 	ac.Endpoint = flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	ac.PollInterval = flag.Int("p", 2, "poll interval")
 	ac.ReportInterval = flag.Int("r", 10, "report interval")
+	ac.Key = flag.String("k", "", "key to verify data integrity")
 	flag.Parse()
 
 	// check environment
@@ -42,6 +44,10 @@ func (ac *AgentConfig) Read() error {
 				pollStr, err)
 		}
 		*ac.PollInterval = int(val)
+	}
+	key := os.Getenv("KEY")
+	if len(key) > 0 {
+		*ac.Key = key
 	}
 
 	// add default url scheme if required
