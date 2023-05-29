@@ -24,7 +24,10 @@ func main() {
 		logger.Log.Fatal("failed to read config params", zap.Error(err))
 	}
 
-	r := connection.NewRestyClient(*config.Endpoint)
+	r, err := connection.NewRestyClient(*config.Endpoint, *config.Key)
+	if err != nil {
+		logger.Log.Fatal("failed to init client", zap.Error(err))
+	}
 	m := reporter.NewReporter(r)
 	pollTicker := time.NewTicker(time.Duration(*config.PollInterval) * time.Second)
 	defer pollTicker.Stop()

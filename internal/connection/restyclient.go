@@ -3,6 +3,9 @@ package connection
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -15,6 +18,7 @@ import (
 type RestyClient struct {
 	client *resty.Client
 	server string
+	key    []byte
 }
 
 func gzipEncoder(_ *resty.Client, req *resty.Request) error {
@@ -57,20 +61,33 @@ func gzipEncoder(_ *resty.Client, req *resty.Request) error {
 	return nil
 }
 
-func NewRestyClient(server string) *RestyClient {
+func NewRestyClient(server string, key string) (*RestyClient, error) {
 	result := RestyClient{
 		server: server,
 		client: resty.New(),
 	}
+	if len(key) > 0 {
+		var err error
+		result.key, err = hex.DecodeString(key)
+		if err != nil {
+			return nil, err
+		}
+	}
 	result.client.SetHeader("Content-Type", "application/json")
 	result.client.OnBeforeRequest(gzipEncoder)
-	return &result
+	return &result, nil
 }
 
 func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
-	reply, err := c.client.R().
-		SetBody(m).
-		Post(fmt.Sprintf("%s/update/", c.server))
+	r := c.client.R().SetBody(m)
+	h, err := c.hashFromData(m)
+	if err != nil {
+		logger.Log.Warn("Failed to calc hash", zap.Error(err))
+	}
+	if len(h) > 0 {
+		r = r.SetHeader("HashSHA256", h)
+	}
+	reply, err := r.Post(fmt.Sprintf("%s/update/", c.server))
 	if err != nil {
 		return err
 	}
@@ -85,9 +102,15 @@ func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 }
 
 func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
-	reply, err := c.client.R().
-		SetBody(metricsBatch).
-		Post(fmt.Sprintf("%s/updates/", c.server))
+	r := c.client.R().SetBody(metricsBatch)
+	h, err := c.hashFromData(metricsBatch)
+	if err != nil {
+		logger.Log.Warn("Failed to calc hash", zap.Error(err))
+	}
+	if len(h) > 0 {
+		r = r.SetHeader("HashSHA256", h)
+	}
+	reply, err := r.Post(fmt.Sprintf("%s/updates/", c.server))
 	if err != nil {
 		return err
 	}
@@ -99,4 +122,19 @@ func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
 		zap.String("body", string(reply.Body())),
 		zap.Int("status_code", reply.StatusCode()))
 	return nil
+}
+
+func (c *RestyClient) hashFromData(data any) (string, error) {
+	if len(c.key) == 0 {
+		return "", nil
+	}
+	bytesToHash, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	logger.Log.Info("Marshalled", zap.String("data", string(bytesToHash)))
+	h := hmac.New(sha256.New, c.key)
+	h.Write(bytesToHash)
+	dst := h.Sum(nil)
+	return hex.EncodeToString(dst), nil
 }
