@@ -113,7 +113,8 @@ func HandleHash(h http.Handler, key []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		msgHash := r.Header.Get("HashSHA256")
 		if len(msgHash) == 0 {
-			http.Error(w, "no data signature", http.StatusBadRequest)
+			//http.Error(w, "no data signature", http.StatusBadRequest)
+			h.ServeHTTP(w, r)
 			return
 		}
 		msg, err := io.ReadAll(r.Body)
