@@ -18,9 +18,9 @@ func MetricsRouter(s interfaces.Storage, db *sql.DB, k []byte) chi.Router {
 	key = k
 	r := chi.NewRouter()
 	r.Middlewares()
+	r.Use(func(h http.Handler) http.Handler { return HandleHash(h, key) })
 	r.Use(RequestLogger)
 	r.Use(GzipHandle)
-	r.Use(func(h http.Handler) http.Handler { return HandleHash(h, key) })
 	r.Get("/", getAllMetrics)
 	r.Get("/ping", ping)
 	r.Post("/updates/", batchUpdate)
