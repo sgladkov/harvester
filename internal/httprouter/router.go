@@ -2,7 +2,6 @@ package httprouter
 
 import (
 	"database/sql"
-	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/sgladkov/harvester/internal/interfaces"
@@ -18,7 +17,7 @@ func MetricsRouter(s interfaces.Storage, db *sql.DB, k []byte) chi.Router {
 	key = k
 	r := chi.NewRouter()
 	r.Middlewares()
-	r.Use(func(h http.Handler) http.Handler { return HandleHash(h, key) })
+	//	r.Use(func(h http.Handler) http.Handler { return HandleHash(h, key) })
 	r.Use(RequestLogger)
 	r.Use(GzipHandle)
 	r.Get("/", getAllMetrics)

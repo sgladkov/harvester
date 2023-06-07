@@ -1,8 +1,10 @@
 package httprouter
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"net/http"
 	"strconv"
@@ -233,6 +235,28 @@ func batchUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}
+	msgHash := r.Header.Get("HashSHA256")
+	if len(msgHash) != 0 {
+		msg, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Log.Warn("error reading body", zap.Error(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		hash, err := HashFromData(msg, key)
+		if err != nil {
+			logger.Log.Warn("failed to sign data", zap.Error(err))
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		if hash != msgHash {
+			logger.Log.Warn("invalid signature")
+			http.Error(w, "unvalid signature", http.StatusBadRequest)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(msg))
+	}
+
 	var m []models.Metrics
 	err := json.NewDecoder(r.Body).Decode(&m)
 	if err != nil {
