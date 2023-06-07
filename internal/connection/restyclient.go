@@ -3,13 +3,11 @@ package connection
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/sgladkov/harvester/internal/httprouter"
 	"github.com/sgladkov/harvester/internal/logger"
 	"github.com/sgladkov/harvester/internal/models"
 	"go.uber.org/zap"
@@ -67,11 +65,7 @@ func NewRestyClient(server string, key string) (*RestyClient, error) {
 		client: resty.New(),
 	}
 	if len(key) > 0 {
-		var err error
-		result.key, err = hex.DecodeString(key)
-		if err != nil {
-			return nil, err
-		}
+		result.key = []byte(key)
 	}
 	result.client.SetHeader("Content-Type", "application/json")
 	result.client.OnBeforeRequest(gzipEncoder)
@@ -80,7 +74,7 @@ func NewRestyClient(server string, key string) (*RestyClient, error) {
 
 func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 	r := c.client.R().SetBody(m)
-	h, err := c.hashFromData(m)
+	h, err := httprouter.HashFromData(m, c.key)
 	if err != nil {
 		logger.Log.Warn("Failed to calc hash", zap.Error(err))
 	}
@@ -103,7 +97,7 @@ func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 
 func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
 	r := c.client.R().SetBody(metricsBatch)
-	h, err := c.hashFromData(metricsBatch)
+	h, err := httprouter.HashFromData(metricsBatch, c.key)
 	if err != nil {
 		logger.Log.Warn("Failed to calc hash", zap.Error(err))
 	}
@@ -122,19 +116,4 @@ func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
 		zap.String("body", string(reply.Body())),
 		zap.Int("status_code", reply.StatusCode()))
 	return nil
-}
-
-func (c *RestyClient) hashFromData(data any) (string, error) {
-	if len(c.key) == 0 {
-		return "", nil
-	}
-	bytesToHash, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	logger.Log.Info("Marshalled", zap.String("data", string(bytesToHash)))
-	h := hmac.New(sha256.New, c.key)
-	h.Write(bytesToHash)
-	dst := h.Sum(nil)
-	return hex.EncodeToString(dst), nil
 }

@@ -1,6 +1,7 @@
 package httprouter
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -105,5 +106,34 @@ func RequestLogger(h http.Handler) http.Handler {
 			zap.Int("status", responseData.status),
 			zap.Int("size", responseData.size),
 		)
+	})
+}
+
+func HandleHash(h http.Handler, key []byte) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		msgHash := r.Header.Get("HashSHA256")
+		if len(msgHash) == 0 {
+			http.Error(w, "no data signature", http.StatusBadRequest)
+			return
+		}
+		msg, err := io.ReadAll(r.Body)
+		if err != nil {
+			logger.Log.Warn("error reading body", zap.Error(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		hash, err := HashFromData(msg, key)
+		if err != nil {
+			logger.Log.Warn("failed to sign data", zap.Error(err))
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		if hash != msgHash {
+			logger.Log.Warn("invalid signature")
+			http.Error(w, "unvalid signature", http.StatusBadRequest)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(msg))
+		h.ServeHTTP(w, r)
 	})
 }
