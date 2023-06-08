@@ -13,6 +13,7 @@ type AgentConfig struct {
 	PollInterval   *int
 	ReportInterval *int
 	Key            *string
+	RateLimit      *uint
 }
 
 func (ac *AgentConfig) Read() error {
@@ -20,6 +21,7 @@ func (ac *AgentConfig) Read() error {
 	ac.PollInterval = flag.Int("p", 2, "poll interval")
 	ac.ReportInterval = flag.Int("r", 10, "report interval")
 	ac.Key = flag.String("k", "", "key to verify data integrity")
+	ac.RateLimit = flag.Uint("l", 0, "max simultaneous server requests")
 	flag.Parse()
 
 	// check environment
@@ -48,6 +50,15 @@ func (ac *AgentConfig) Read() error {
 	key := os.Getenv("KEY")
 	if len(key) > 0 {
 		*ac.Key = key
+	}
+	rateLimitStr := os.Getenv("RATE_LIMIT")
+	if len(rateLimitStr) > 0 {
+		val, err := strconv.ParseUint(rateLimitStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("failed to interpret RATE_LIMIT (=%s) environment variable, error is [%s]",
+				pollStr, err)
+		}
+		*ac.RateLimit = uint(val)
 	}
 
 	// add default url scheme if required
