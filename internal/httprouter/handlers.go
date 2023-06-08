@@ -251,10 +251,10 @@ func batchUpdate(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
-		logger.Log.Info("calculated hash", zap.String("hash", msgHash))
+		logger.Log.Info("calculated hash", zap.String("hash", hash))
 		if hash != msgHash {
 			logger.Log.Warn("invalid signature")
-			http.Error(w, "unvalid signature", http.StatusBadRequest)
+			http.Error(w, "invalid signature", http.StatusBadRequest)
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(msg))

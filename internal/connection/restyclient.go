@@ -74,7 +74,11 @@ func NewRestyClient(server string, key string) (*RestyClient, error) {
 
 func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 	r := c.client.R().SetBody(m)
-	h, err := httprouter.HashFromData(m, c.key)
+	bytesToHash, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	h, err := httprouter.HashFromData(bytesToHash, c.key)
 	if err != nil {
 		logger.Log.Warn("Failed to calc hash", zap.Error(err))
 	}
@@ -97,7 +101,11 @@ func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 
 func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
 	r := c.client.R().SetBody(metricsBatch)
-	h, err := httprouter.HashFromData(metricsBatch, c.key)
+	bytesToHash, err := json.Marshal(metricsBatch)
+	if err != nil {
+		return err
+	}
+	h, err := httprouter.HashFromData(bytesToHash, c.key)
 	if err != nil {
 		logger.Log.Warn("Failed to calc hash", zap.Error(err))
 	}

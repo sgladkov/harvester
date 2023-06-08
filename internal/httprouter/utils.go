@@ -4,12 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/sgladkov/harvester/internal/logger"
-	"go.uber.org/zap"
 )
 
 func ContainsHeaderValue(r *http.Request, header string, value string) bool {
@@ -25,17 +21,12 @@ func ContainsHeaderValue(r *http.Request, header string, value string) bool {
 	return false
 }
 
-func HashFromData(data any, key []byte) (string, error) {
+func HashFromData(data []byte, key []byte) (string, error) {
 	if len(key) == 0 {
 		return "", nil
 	}
-	bytesToHash, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	logger.Log.Info("Marshalled", zap.String("data", string(bytesToHash)))
 	h := hmac.New(sha256.New, key)
-	h.Write(bytesToHash)
+	h.Write(data)
 	dst := h.Sum(nil)
 	return hex.EncodeToString(dst), nil
 }
