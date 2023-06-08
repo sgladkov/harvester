@@ -3,7 +3,6 @@ package httprouter
 import (
 	"encoding/json"
 	"fmt"
-
 	"net/http"
 	"strconv"
 
@@ -233,6 +232,7 @@ func batchUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}
+
 	var m []models.Metrics
 	err := json.NewDecoder(r.Body).Decode(&m)
 	if err != nil {
