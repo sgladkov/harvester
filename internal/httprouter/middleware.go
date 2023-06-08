@@ -111,6 +111,14 @@ func RequestLogger(h http.Handler) http.Handler {
 
 func HandleHash(h http.Handler, key []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			h.ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Path != "updates/" {
+			h.ServeHTTP(w, r)
+			return
+		}
 		msgHash := r.Header.Get("HashSHA256")
 		if len(msgHash) == 0 {
 			//http.Error(w, "no data signature", http.StatusBadRequest)
