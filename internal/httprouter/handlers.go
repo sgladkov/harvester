@@ -232,30 +232,6 @@ func batchUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Wrong Content-Type header [%s]", contentType), http.StatusBadRequest)
 		return
 	}
-	//msgHash := r.Header.Get("HashSHA256")
-	//if len(msgHash) != 0 {
-	//	logger.Log.Info("hash from header", zap.String("hash", msgHash))
-	//	msg, err := io.ReadAll(r.Body)
-	//	if err != nil {
-	//		logger.Log.Warn("error reading body", zap.Error(err))
-	//		http.Error(w, err.Error(), http.StatusBadRequest)
-	//		return
-	//	}
-	//	logger.Log.Info("body to hash", zap.String("body", string(msg)))
-	//	hash, err := HashFromData(msg, key)
-	//	if err != nil {
-	//		logger.Log.Warn("failed to sign data", zap.Error(err))
-	//		http.Error(w, err.Error(), http.StatusBadGateway)
-	//		return
-	//	}
-	//	logger.Log.Info("calculated hash", zap.String("hash", hash))
-	//	if hash != msgHash {
-	//		logger.Log.Warn("invalid signature")
-	//		http.Error(w, "invalid signature", http.StatusBadRequest)
-	//		return
-	//	}
-	//	r.Body = io.NopCloser(bytes.NewBuffer(msg))
-	//}
 
 	var m []models.Metrics
 	err := json.NewDecoder(r.Body).Decode(&m)
