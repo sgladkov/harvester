@@ -42,20 +42,28 @@ func main() {
 	}()
 	reportTicker := time.NewTicker(time.Duration(*config.ReportInterval) * time.Second)
 	defer reportTicker.Stop()
+	requests := make(chan struct{}, *config.RateLimit)
 	go func() {
 		for range reportTicker.C {
-			err := utils.RetryOnError(
-				func() error {
-					return m.BatchReport()
-				},
-				func(err error) bool {
-					return true
-				},
-			)
-			if err != nil {
-				logger.Log.Warn("Failed to report", zap.Error(err))
+			select {
+			case requests <- struct{}{}:
+				err := utils.RetryOnError(
+					func() error {
+						return m.BatchReport()
+					},
+					func(err error) bool {
+						return true
+					},
+				)
+				if err != nil {
+					logger.Log.Warn("Failed to report", zap.Error(err))
+				}
+				logger.Log.Info("Metrics are reported")
+				<-requests
+			default:
+				logger.Log.Warn("Too many simultaneous requests")
+				time.Sleep(100 * time.Millisecond)
 			}
-			logger.Log.Info("Metrics are reported")
 		}
 	}()
 	for {

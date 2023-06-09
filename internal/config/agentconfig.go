@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -61,6 +62,10 @@ func (ac *AgentConfig) Read() error {
 		*ac.RateLimit = uint(val)
 	}
 
+	// if rate limit is 0 set it to cpu number:
+	if *ac.RateLimit == 0 {
+		*ac.RateLimit = uint(runtime.GOMAXPROCS(0))
+	}
 	// add default url scheme if required
 	if !strings.HasPrefix(*ac.Endpoint, "http://") && !strings.HasPrefix(*ac.Endpoint, "https://") {
 		*ac.Endpoint = "http://" + *ac.Endpoint
