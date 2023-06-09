@@ -7,6 +7,7 @@ import (
 
 	"github.com/sgladkov/harvester/internal/interfaces"
 	"github.com/sgladkov/harvester/internal/models"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Reporter struct {
@@ -59,8 +60,15 @@ func (m *Reporter) Poll() error {
 	m.gauges["StackSys"] = float64(data.StackSys)
 	m.gauges["Sys"] = float64(data.Sys)
 	m.gauges["TotalAlloc"] = float64(data.TotalAlloc)
-	m.gauges["TotalMemory"] = float64(data.TotalAlloc)
-	m.gauges["CPUutilization1"] = float64(1)
+
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+	m.gauges["TotalMemory"] = float64(v.Total)
+	m.gauges["FreeMemory"] = float64(v.Free)
+	m.gauges["CPUutilization1"] = v.UsedPercent
+
 	m.gauges["RandomValue"] = rand.Float64()
 	m.counters["PollCount"]++
 	return nil
