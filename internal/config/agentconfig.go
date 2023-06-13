@@ -13,7 +13,7 @@ type AgentConfig struct {
 	Endpoint       *string
 	PollInterval   *int
 	ReportInterval *int
-	Key            *string
+	Key            []byte
 	RateLimit      *uint
 }
 
@@ -21,7 +21,7 @@ func (ac *AgentConfig) Read() error {
 	ac.Endpoint = flag.String("a", "localhost:8080", "endpoint to start server (localhost:8080 by default)")
 	ac.PollInterval = flag.Int("p", 2, "poll interval")
 	ac.ReportInterval = flag.Int("r", 10, "report interval")
-	ac.Key = flag.String("k", "", "key to verify data integrity")
+	ac.Key = []byte(*flag.String("k", "", "key to verify data integrity"))
 	ac.RateLimit = flag.Uint("l", 0, "max simultaneous server requests")
 	flag.Parse()
 
@@ -50,7 +50,7 @@ func (ac *AgentConfig) Read() error {
 	}
 	key := os.Getenv("KEY")
 	if len(key) > 0 {
-		*ac.Key = key
+		ac.Key = []byte(key)
 	}
 	rateLimitStr := os.Getenv("RATE_LIMIT")
 	if len(rateLimitStr) > 0 {

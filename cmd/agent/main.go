@@ -24,7 +24,7 @@ func main() {
 		logger.Log.Fatal("failed to read config params", zap.Error(err))
 	}
 
-	r, err := connection.NewRestyClient(*config.Endpoint, *config.Key)
+	r, err := connection.NewRestyClient(*config.Endpoint, config.Key)
 	if err != nil {
 		logger.Log.Fatal("failed to init client", zap.Error(err))
 	}

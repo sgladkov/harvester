@@ -14,7 +14,7 @@ type ServerConfig struct {
 	FileStorage   *string
 	RestoreFlag   *bool
 	DatabaseDSN   *string
-	Key           *string
+	Key           []byte
 }
 
 func (sc *ServerConfig) Read() (string, error) {
@@ -26,7 +26,7 @@ func (sc *ServerConfig) Read() (string, error) {
 	sc.FileStorage = flag.String("s", "/tmp/metrics-db.json", "file to store ans restore metrics")
 	sc.RestoreFlag = flag.Bool("r", true, "should server read initial metrics value from the file")
 	sc.DatabaseDSN = flag.String("d", "", "database connection string for PostgreSQL")
-	sc.Key = flag.String("k", "", "key to verify data integrity")
+	sc.Key = []byte(*flag.String("k", "", "key to verify data integrity"))
 	flag.Parse()
 
 	// check environment
@@ -67,7 +67,7 @@ func (sc *ServerConfig) Read() (string, error) {
 	}
 	key := os.Getenv("KEY")
 	if len(key) > 0 {
-		*sc.Key = key
+		sc.Key = []byte(key)
 	}
 
 	return logLevel, nil

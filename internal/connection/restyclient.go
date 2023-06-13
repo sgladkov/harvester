@@ -59,13 +59,13 @@ func gzipEncoder(_ *resty.Client, req *resty.Request) error {
 	return nil
 }
 
-func NewRestyClient(server string, key string) (*RestyClient, error) {
+func NewRestyClient(server string, key []byte) (*RestyClient, error) {
 	result := RestyClient{
 		server: server,
 		client: resty.New(),
 	}
 	if len(key) > 0 {
-		result.key = []byte(key)
+		result.key = key
 	}
 	result.client.SetHeader("Content-Type", "application/json")
 	result.client.OnBeforeRequest(gzipEncoder)
