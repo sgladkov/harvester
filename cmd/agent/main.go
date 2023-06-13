@@ -36,8 +36,9 @@ func main() {
 			err := m.Poll()
 			if err != nil {
 				logger.Log.Warn("Failed to poll", zap.Error(err))
+			} else {
+				logger.Log.Info("Metrics are read")
 			}
-			logger.Log.Info("Metrics are read")
 		}
 	}()
 	reportTicker := time.NewTicker(time.Duration(*config.ReportInterval) * time.Second)
@@ -57,8 +58,9 @@ func main() {
 				)
 				if err != nil {
 					logger.Log.Warn("Failed to report", zap.Error(err))
+				} else {
+					logger.Log.Info("Metrics are reported")
 				}
-				logger.Log.Info("Metrics are reported")
 				<-requests
 			default:
 				logger.Log.Warn("Too many simultaneous requests")
