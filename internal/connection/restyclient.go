@@ -78,10 +78,7 @@ func (c *RestyClient) UpdateMetrics(m *models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	h, err := httprouter.HashFromData(bytesToHash, c.key)
-	if err != nil {
-		logger.Log.Warn("Failed to calc hash", zap.Error(err))
-	}
+	h := httprouter.HashFromData(bytesToHash, c.key)
 	if len(h) > 0 {
 		r = r.SetHeader("HashSHA256", h)
 	}
@@ -105,10 +102,7 @@ func (c *RestyClient) BatchUpdateMetrics(metricsBatch []models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	h, err := httprouter.HashFromData(bytesToHash, c.key)
-	if err != nil {
-		logger.Log.Warn("Failed to calc hash", zap.Error(err))
-	}
+	h := httprouter.HashFromData(bytesToHash, c.key)
 	if len(h) > 0 {
 		r = r.SetHeader("HashSHA256", h)
 	}

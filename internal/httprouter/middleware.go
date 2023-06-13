@@ -131,12 +131,7 @@ func HandleHash(h http.Handler, key []byte) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		hash, err := HashFromData(msg, key)
-		if err != nil {
-			logger.Log.Warn("failed to sign data", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
+		hash := HashFromData(msg, key)
 		if hash != msgHash {
 			logger.Log.Warn("invalid signature")
 			http.Error(w, "unvalid signature", http.StatusBadRequest)

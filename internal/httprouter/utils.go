@@ -21,12 +21,12 @@ func ContainsHeaderValue(r *http.Request, header string, value string) bool {
 	return false
 }
 
-func HashFromData(data []byte, key []byte) (string, error) {
+func HashFromData(data []byte, key []byte) string {
 	if len(key) == 0 {
-		return "", nil
+		return ""
 	}
 	h := hmac.New(sha256.New, key)
 	h.Write(data)
 	dst := h.Sum(nil)
-	return hex.EncodeToString(dst), nil
+	return hex.EncodeToString(dst)
 }
