@@ -24,7 +24,10 @@ func main() {
 		logger.Log.Fatal("failed to read config params", zap.Error(err))
 	}
 
-	r := connection.NewRestyClient(*config.Endpoint)
+	r, err := connection.NewRestyClient(*config.Endpoint, config.Key)
+	if err != nil {
+		logger.Log.Fatal("failed to init client", zap.Error(err))
+	}
 	m := reporter.NewReporter(r)
 	pollTicker := time.NewTicker(time.Duration(*config.PollInterval) * time.Second)
 	defer pollTicker.Stop()
@@ -33,26 +36,36 @@ func main() {
 			err := m.Poll()
 			if err != nil {
 				logger.Log.Warn("Failed to poll", zap.Error(err))
+			} else {
+				logger.Log.Info("Metrics are read")
 			}
-			logger.Log.Info("Metrics are read")
 		}
 	}()
 	reportTicker := time.NewTicker(time.Duration(*config.ReportInterval) * time.Second)
 	defer reportTicker.Stop()
+	requests := make(chan struct{}, *config.RateLimit)
 	go func() {
 		for range reportTicker.C {
-			err := utils.RetryOnError(
-				func() error {
-					return m.BatchReport()
-				},
-				func(err error) bool {
-					return true
-				},
-			)
-			if err != nil {
-				logger.Log.Warn("Failed to report", zap.Error(err))
+			select {
+			case requests <- struct{}{}:
+				err := utils.RetryOnError(
+					func() error {
+						return m.BatchReport()
+					},
+					func(err error) bool {
+						return true
+					},
+				)
+				if err != nil {
+					logger.Log.Warn("Failed to report", zap.Error(err))
+				} else {
+					logger.Log.Info("Metrics are reported")
+				}
+				<-requests
+			default:
+				logger.Log.Warn("Too many simultaneous requests")
+				time.Sleep(100 * time.Millisecond)
 			}
-			logger.Log.Info("Metrics are reported")
 		}
 	}()
 	for {
